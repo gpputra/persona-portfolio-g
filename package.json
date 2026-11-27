@@ -1,0 +1,24 @@
+{
+  "name": "persona5-theme-portfolio-g",
+  "version": "1.0.0",
+  "description": "A Persona 5 menu-inspired portfolio, structured as Model–View–Controller.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "live-server --port=5173"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Omicron69/persona5-style-portfolio.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Omicron69/persona5-style-portfolio/issues"
+  },
+  "homepage": "https://github.com/Omicron69/persona5-style-portfolio#readme",
+  "devDependencies": {
+    "live-server": "^1.2.2"
+  }
+}

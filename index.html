@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>MERAJ RAHMAN · PORTFOLIO</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Barlow+Condensed:wght@400;600;700&display=swap"
+    rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+
+
+<body data-screen="boot">
+
+  <!-- ============================================================
+     1. BOOT / AUDIO UNLOCK OVERLAY
+     ============================================================ -->
+  <div id="boot-overlay">
+    <div id="boot-content">
+      <div id="boot-bg-stripes" aria-hidden="true"></div>
+      <div id="boot-halftone" aria-hidden="true"></div>
+      <div id="boot-star" aria-hidden="true">
+        <svg viewBox="0 0 100 100">
+          <polygon points="50,0 60,35 98,35 68,57 78,94 50,72 22,94 32,57 2,35 40,35" />
+        </svg>
+      </div>
+      <div id="boot-text">
+        <div id="boot-title">TAKE YOUR HEART</div>
+        <div id="boot-divider"></div>
+        <div id="boot-subtitle">CLICK OR PRESS ENTER TO START</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================
+     2. BACKGROUND ART LAYERS
+     ============================================================ -->
+  <div id="bg" aria-hidden="true">
+    <div class="bg-layer" id="bg-stripes"></div>
+    <svg class="bg-star" style="left:6%;top:8%;width:26vmax;height:26vmax" viewBox="0 0 100 100">
+      <polygon points="50,0 60,35 98,35 68,57 78,94 50,72 22,94 32,57 2,35 40,35" fill="#0B0B0B" />
+    </svg>
+    <svg class="bg-star s2" style="right:4%;bottom:6%;width:34vmax;height:34vmax" viewBox="0 0 100 100">
+      <polygon points="50,0 60,35 98,35 68,57 78,94 50,72 22,94 32,57 2,35 40,35" fill="#fff" />
+    </svg>
+    <!-- Per-screen menu artwork -->
+    <img class="menu-art" id="art-home" src="assets/menus/home.jpg" alt=""
+      onload="document.body.classList.add('has-art-home')" onerror="this.remove()">
+    <img class="menu-art" id="art-projects" src="assets/menus/projects.jpg" alt=""
+      onload="document.body.classList.add('has-art-projects')" onerror="this.remove()">
+    <img class="menu-art" id="art-skills" src="assets/menus/skills.jpg" alt=""
+      onload="document.body.classList.add('has-art-skills')" onerror="this.remove()">
+    <img class="menu-art" id="art-about" src="assets/menus/about.jpg" alt=""
+      onload="document.body.classList.add('has-art-about')" onerror="this.remove()">
+    <img class="menu-art" id="art-certificates" src="assets/menus/certificates.jpg" alt=""
+      onload="document.body.classList.add('has-art-certificates')" onerror="this.remove()">
+    <img class="menu-art" id="art-contact" src="assets/menus/contact.jpg" alt=""
+      onload="document.body.classList.add('has-art-contact')" onerror="this.remove()">
+    <div class="bg-layer" id="bg-halftone"></div>
+    <div class="bg-layer" id="bg-vignette"></div>
+  </div>
+  <div id="slash" aria-hidden="true"></div>
+
+  <!-- Hero art -->
+  <img id="hero-art" src="assets/hero.png" alt="" onerror="this.remove()">
+
+  <!-- Screen transition wipe -->
+  <div id="wipe" aria-hidden="true">
+    <div class="pane p3"></div>
+    <div class="pane p2"></div>
+    <div class="pane p1"></div>
+    <div class="flash"></div>
+  </div>
+
+  <!-- Custom animated cursor -->
+  <div id="cursor" aria-hidden="true"></div>
+
+  <!-- Audio elements -->
+  <audio id="sfx-select" src="assets/sfx/select.mp3" preload="auto"></audio>
+  <audio id="bgm-player" loop preload="none"></audio>
+
+  <!-- ============================================================
+     3. MAIN SHELL WITH GLOBAL HUD
+     ============================================================ -->
+  <div id="shell">
+
+    <!-- ========== HUD TOP ========== -->
+    <div id="hud-top">
+      <div class="hud-tag" id="hud-identity">PORTFOLIO // MERAJ RAHMAN</div>
+      <div class="hud-tag alt" id="hud-location">LONDON — UNITED KINGDOM</div>
+    </div>
+
+    <!-- ========== STAGE (all screens live here) ========== -->
+    <div id="stage">
+
+      <!-- HOME / MAIN MENU -->
+      <section class="screen active" id="screen-home" aria-label="Main menu">
+        <div id="home-layout">
+          <!-- Left: identity + menu -->
+          <div id="home-left">
+            <div id="intro-eyebrow">Take a look at my work</div>
+
+            <h1 id="big-name">
+              <span class="ransom" data-ransom="MERAJ"></span>
+              <span class="ransom" data-ransom="RAHMAN"></span>
+            </h1>
+            <p id="tagline">
+              AI Engineer, full-stack developer, and MSc Artificial Intelligence student at Kingston University London.
+              From browser-based real-time gesture recognition to scalable healthcare platforms, I transform heavy
+              mathematical algorithms into engaging, accessible, and intuitive web experiences.
+            </p>
+            <nav id="menu" aria-label="Sections">
+              <button class="menu-item sel" data-target="projects"
+                data-subtitle="Browse my featured work and GitHub repositories">
+                <span class="ransom" data-ransom="PROJECTS"></span><span class="cursor-mark">◀</span>
+              </button>
+              <button class="menu-item" data-target="skills"
+                data-subtitle="Technical proficiencies and spoken languages">
+                <span class="ransom" data-ransom="SKILLS"></span><span class="cursor-mark">◀</span>
+              </button>
+              <button class="menu-item" data-target="about" data-subtitle="Who I am and where I come from">
+                <span class="ransom" data-ransom="ABOUT"></span><span class="cursor-mark">◀</span>
+              </button>
+              <button class="menu-item" data-target="certificates"
+                data-subtitle="Courses, certifications, and qualifications">
+                <span class="ransom" data-ransom="CERTIFICATES"></span><span class="cursor-mark">◀</span>
+              </button>
+              <button class="menu-item" data-target="contact" data-subtitle="Get in touch — email, socials, and more">
+                <span class="ransom" data-ransom="CONTACT"></span><span class="cursor-mark">◀</span>
+              </button>
+            </nav>
+          </div>
+          <!-- Right: diagonal hero area with dynamic preview cards (desktop) -->
+          <div id="home-right" aria-hidden="true">
+
+          </div>
+      </section>
+
+      <!-- PROJECTS -->
+      <section class="screen sub" id="screen-projects" aria-label="Projects">
+        <div class="screen-head"><span class="ransom" data-ransom="PROJECTS"></span></div>
+        <button class="back-hint" data-back>ESC · Back</button>
+        <button class="back-hint mobile-back" data-back>◀ BACK</button>
+        <div class="grid-label"><span class="bar"></span>Featured</div>
+        <div id="feat-grid" class="grid"></div>
+        <div class="grid-label"><span class="bar"></span>All repositories</div>
+        <div id="repo-status">Contacting GitHub…</div>
+        <div id="repo-grid" class="grid"></div>
+      </section>
+
+      <!-- SKILLS -->
+      <section class="screen sub" id="screen-skills" aria-label="Skills">
+        <div class="screen-head"><span class="ransom" data-ransom="SKILLS"></span></div>
+        <button class="back-hint" data-back>ESC · Back</button>
+        <button style="margin-bottom: -10px;" class="back-hint mobile-back" data-back>◀ BACK</button>
+        <div id="skills-body"></div>
+      </section>
+
+      <!-- ABOUT -->
+      <section class="screen sub align-right" id="screen-about" aria-label="About">
+        <div class="screen-head"><span class="ransom" data-ransom="ABOUT"></span></div>
+        <button style="margin-top: 5px;" class="back-hint" data-back>ESC · Back</button>
+        <button style="margin-bottom: -10px;" class="back-hint mobile-back" data-back>◀ BACK</button>
+        <div class="paper">
+          <figure class="about-photo">
+            <img src="assets/me.jpg" alt="Meraj Rahman" onerror="this.parentElement.remove()">
+            <figcaption>Meraj · London</figcaption>
+          </figure>
+          <p class="quote">Mieko Kawakami wrote that <em>"people are strange... they know nothing
+              lasts forever, but still find time to laugh and cry and get upset, laboring over
+              things."</em> My job as an <strong>AI Engineer and full-stack developer</strong> is to
+            build software that respects that beautifully complex human reality.</p>
+          <br>
+          <p>I am a Computer Science graduate <span class="stamp">First-Class Honours</span>
+            currently specializing in machine learning and computer vision through an
+            <span class="stamp">MSc in Artificial Intelligence</span> at Kingston University London.
+            I combine mathematical precision with human-centered design, translating complex
+            algorithms into intuitive, enjoyable web applications. From building real-time browser
+            gesture recognition models that power a fun, Duolingo-style platform to learn the basics
+            of British Sign Language fingerspelling
+            (<a href="https://bslgame.co.uk" target="_blank" rel="noopener">bslgame.co.uk</a>),
+            to leading front-end development for stakeholder-focused healthcare data tracking
+            solutions, I specialize in making data pipelines leak-free, scalable, and accessible.
+            You can explore my technical repositories and live deployments at
+            <a href="https://github.com/Omicron69" target="_blank" rel="noopener">github.com/Omicron69</a>.
+          </p>
+          <br>
+          <p>There is a genuine excitement that comes from understanding how other people live,
+            eat, and communicate. I thrive on learning about different cultures and food cuisines,
+            and getting to know the textured reality behind them is what keeps me curious about the
+            world. Growing up speaking English, Bengali, Hindi, and Urdu fluently, alongside
+            conversational Japanese, has shaped how I listen and connect with others. That same
+            grounding carried me through the heat of fast-paced hospitality kitchens and the
+            overwhelming energy of coordinating events for three thousand attendees. Those moments
+            taught me how to hold my composure, observe quietly, and bring real empathy and
+            analytical rigor to collaborative engineering teams. Whether I am laboring over the math
+            to train neural networks or studying audience retention metrics to grow my
+            <a href="https://youtu.be/_jaJ0xAY9j0?si=PH71cBIqgfGA99NV" target="_blank" rel="noopener">personal
+              YouTube channel</a> to two million views, I am always searching for the person on the
+            other side of the screen. I am driven by the belief that the best technology is built
+            not just for abstract users, but for living, breathing human beings.
+          </p>
+        </div>
+        <a class="cv-btn" href="assets/cv/Meraj_Rahman_CV_2026.pdf" download="Meraj_Rahman_CV_2026.pdf">
+          <span>⬇ Download my CV (PDF)</span>
+        </a>
+      </section>
+
+      <!-- CERTIFICATES -->
+      <section class="screen sub" id="screen-certificates" aria-label="Certificates">
+        <div class="screen-head"><span class="ransom" data-ransom="CERTIFICATES"></span></div>
+        <button class="back-hint" data-back>ESC · Back</button>
+        <button class="back-hint mobile-back" data-back>◀ BACK</button>
+        <div id="certificates-body">
+          <p style="letter-spacing:.2em;text-transform:uppercase;font-size:15px;opacity:.7;">
+            Content coming soon — add your certificates to Model.certificates in js/model.js
+          </p>
+        </div>
+      </section>
+
+      <!-- CONTACT -->
+      <section class="screen sub align-right" id="screen-contact" aria-label="Contact">
+        <div class="screen-head"><span class="ransom" data-ransom="CONTACT"></span></div>
+        <button style="margin-top: 5px;" class="back-hint" data-back>ESC · Back</button>
+        <button style="margin-bottom: -10px;" class="back-hint mobile-back" data-back>◀ BACK</button>
+        <div class="paper" style="max-width:620px">
+          <p>I'm open to <strong>graduate ML and software engineering roles</strong> and research
+            collaborations in AI. Drop me a message below and it goes straight to my inbox,
+            or find me on any of these:</p>
+        </div>
+        <div class="contact-list">
+          <a class="contact-chip" href="mailto:meraj.rahman777@gmail.com"><span>Email ✉</span></a>
+          <a class="contact-chip" href="https://www.linkedin.com/in/mohammed-meraj-rahman-b1908a131/" target="_blank"
+            rel="noopener"><span>LinkedIn ↗</span></a>
+          <a class="contact-chip" href="https://github.com/Omicron69" target="_blank" rel="noopener"><span>GitHub
+              ↗</span></a>
+          <a class="contact-chip" href="https://www.youtube.com/@MezRahman777" target="_blank"
+            rel="noopener"><span>YouTube ↗</span></a>
+          <a class="contact-chip" href="https://www.instagram.com/meraz.rah" target="_blank"
+            rel="noopener"><span>Instagram ↗</span></a>
+          <a class="contact-chip" href="https://bslgame.co.uk/" target="_blank" rel="noopener"><span>BSL Game
+              ↗</span></a>
+          <a class="contact-chip" href="assets/cv/Meraj_Rahman_CV_2026.pdf" download="Meraj_Rahman_CV_2026.pdf"><span>CV
+              ⬇</span></a>
+        </div>
+        <form id="contact-form" class="paper" style="max-width:620px" novalidate>
+          <div class="form-head">Send me a message</div>
+          <label class="field">
+            <span>Name</span>
+            <input type="text" name="name" required maxlength="100" autocomplete="name">
+          </label>
+          <label class="field">
+            <span>Your email</span>
+            <input type="email" name="email" required maxlength="150" autocomplete="email">
+          </label>
+          <label class="field">
+            <span>Message</span>
+            <textarea name="message" required rows="5" maxlength="3000"></textarea>
+          </label>
+          <input type="text" name="_honey" tabindex="-1" autocomplete="off" style="position:absolute;left:-5000px"
+            aria-hidden="true">
+          <div class="form-foot">
+            <button type="submit" class="cv-btn form-send"><span>Send it ➤</span></button>
+            <div id="form-status" role="status"></div>
+          </div>
+        </form>
+      </section>
+
+    </div><!-- /stage -->
+
+    <!-- ========== HUD BOTTOM ========== -->
+    <div id="hud-bottom">
+      <!-- Bottom-left: controls legend (desktop) or back button (mobile, shown on sub-pages) -->
+      <div id="hud-controls">
+        <span class="hud-desktop-controls">
+          <span class="key">▲▼</span>SELECT
+          <span class="key">ENTER</span>CONFIRM
+          <span class="key">ESC</span>BACK
+        </span>
+      </div>
+      <!-- Bottom-center: live dynamic subtitle -->
+      <div id="hud-subtitle"></div>
+      <!-- Bottom-right: audio toggles + date/time -->
+      <div id="hud-right">
+        <button class="hud-pill" id="pill-sfx" title="Toggle sound effects">SFX ON</button>
+        <button class="hud-pill" id="pill-music" title="Toggle background music">MUSIC OFF</button>
+        <button class="hud-pill" id="pill-playlist" title="Toggle playlist panel">PLAYLIST</button>
+        <div class="hud-badge" id="hud-clock"></div>
+      </div>
+    </div>
+
+  </div><!-- /shell -->
+
+  <!-- Playlist panel (toggled via PLAYLIST pill) -->
+  <div id="playlist-panel" class="hidden">
+    <div id="playlist-head">
+      <span>♫ BGM PLAYLIST</span>
+      <button id="playlist-close">✕</button>
+    </div>
+    <div id="playlist-tracks">
+      <p class="playlist-empty">Drop .mp3 files into <code>public/audio/bgm/</code> and list them in Model.playlist</p>
+    </div>
+  </div>
+
+  <!-- MVC scripts -->
+  <script src="js/model.js" defer></script>
+  <script src="js/view.js" defer></script>
+  <script src="js/controller.js" defer></script>
+</body>
+
+</html>
