@@ -1,112 +1,129 @@
 /* =====================================================================
    CONTROLLER — listens to the user, updates the Model, tells the View.
+   Sound rules: hover on mouse-over and keyboard focus, confirm on
+   click/Enter, back on Escape, BACK and closing.
    ===================================================================== */
 
 const Controller = {
 
   transitioning: false,
-  audioUnlocked: false,
+  confirming: false,    // true during the 200ms menu flash
 
   init() {
-    // Don't initialize the main app until boot is dismissed
-    this.bindBoot();
-  },
-
-  /* ========== BOOT / AUDIO UNLOCK ========== */
-  bindBoot() {
-    const dismiss = (e) => {
-      // Only respond to click/touch or Enter key
-      if (e.type === "keydown" && e.key !== "Enter") return;
-      e.preventDefault();
-
-      // Unlock audio context (browsers require user gesture)
-      this.audioUnlocked = true;
-
-      // Remove boot listeners
-      document.removeEventListener("click", dismiss);
-      document.removeEventListener("keydown", dismiss);
-      document.removeEventListener("touchend", dismiss);
-
-      // Dismiss the boot overlay and start the app
-      View.dismissBoot(() => {
-        this.startApp();
-      });
-    };
-
-    document.addEventListener("click", dismiss);
-    document.addEventListener("keydown", dismiss);
-    document.addEventListener("touchend", dismiss, { passive: false });
-  },
-
-  startApp() {
-    // Initialize the View (ransom letters, clock, parallax, cursor)
+    this.applyModelDefaults();
     View.init();
-
-    // Show the home screen
-    Model.state.screen = "home";
-    View.showScreen("home");
-
-    // Set up initial SFX pill state
-    View.els.pillSfx.classList.add("active");
-
-    // Bind everything
+    View.toggleSFX(Model.state.sfxOn);
+    SFX.init();
+    this.bindAudio();
+    this.bindSounds();
+    this.bindBoot();
     this.bindMenu();
     this.bindKeyboard();
-    this.bindHUDControls();
     this.bindContactForm();
-
-    // Render playlist if any tracks exist
-    View.renderPlaylist();
-
-    // Auto-play first SFX to confirm audio is working
-    setTimeout(() => this.play(), 200);
   },
 
-  /* ========== Navigation ========== */
-  goTo(screen) {
-    if (this.transitioning || screen === Model.state.screen) return;
-    this.transitioning = true;
-    this.play();
+  // Fills in only what model.js doesn't define
+  applyModelDefaults() {
+    const defaults = { screen: "home", menuIndex: 0, sfxOn: true, musicOn: false, playlistOpen: false, currentTrack: -1 };
+    Object.entries(defaults).forEach(([key, value]) => {
+      if (Model.state[key] === undefined) Model.state[key] = value;
+    });
+  },
 
-    // Update subtitle for the target screen
-    if (screen === "home") {
-      View.updateSubtitle(Model.menuItems[Model.state.menuIndex].subtitle);
-    } else {
-      const item = Model.menuItems.find(m => m.target === screen);
-      View.updateSubtitle(item ? item.subtitle : "");
-    }
+  /* ---------- Boot overlay: the first gesture unlocks all audio ---------- */
+  bindBoot() {
+    const start = () => {
+      if (!this.booting() || this.started) return;
+      this.started = true;
+      SFX.play("confirm");
+      // called synchronously inside the gesture, as autoplay rules require
+      if (AUDIO_CONFIG.autoStartMusic) BGM.setPlaying(true);
+      View.dismissBoot();
+    };
+    View.els.bootOverlay.addEventListener("click", start);
+    addEventListener("keydown", e => {
+      // Escape and bare modifiers don't count as a gesture in browsers
+      if (!this.booting() || ["Escape", "Tab", "Shift", "Control", "Alt", "Meta"].includes(e.key)) return;
+      e.preventDefault();
+      e.stopImmediatePropagation();      // this Enter must not also open Projects
+      start();
+    });
+  },
+
+  booting() {
+    return document.body.dataset.screen === "boot";
+  },
+
+  /* ---------- Navigation ---------- */
+  goTo(screen, onSwap) {
+    if (this.transitioning || screen === Model.state.screen) return false;
+    this.transitioning = true;
+    if (Model.state.playlistOpen) View.togglePlaylist(false);
+
+    // The lock opens as soon as the new page is in place (the wipe is only
+    // sliding away by then, so taps must count). The timer is a backstop.
+    const unlock = () => {
+      clearTimeout(this.lockTimer);
+      this.transitioning = false;
+    };
+    this.lockTimer = setTimeout(unlock, 800);
 
     View.wipe(
-      () => {
-        Model.state.screen = screen;
-        View.showScreen(screen);
-        if (screen === "projects") this.loadProjects();
-        if (screen === "skills") this.loadSkills();
+      () => {                       // mid-wipe: swap screens while covered
+        try {
+          Model.state.screen = screen;
+          View.showScreen(screen);
+          const item = View.els.menuItems.find(m => m.dataset.target === screen)
+            || View.els.menuItems[Model.state.menuIndex];
+          View.updateSubtitle(item.dataset.subtitle);
+          if (screen === "projects") this.loadProjects();
+          if (screen === "skills") this.loadSkills();
+        } finally {                 // runs even if a page fails to render
+          if (onSwap) onSwap();
+          unlock();
+        }
       },
-      () => { this.transitioning = false; }
+      () => { }
     );
+    return true;
+  },
+
+  // Menu click, tap or Enter: flash first, then change page
+  confirmMenu(index) {
+    const item = View.els.menuItems[index];
+    if (!item || this.confirming || this.transitioning) return;
+    if (document.body.dataset.screen !== "home") return;   // what is really on screen
+    Model.state.screen = "home";
+    this.select(index);
+    this.confirming = true;
+    Menu.burst(index, () => {       // fired by setTimeout, never animationend
+      this.confirming = false;
+      const target = item.dataset.page || item.dataset.target;
+      if (!this.goTo(target, () => Menu.reset())) Menu.reset();
+    });
   },
 
   select(index) {
+    if (this.confirming) return;        // selection is locked during the burst
     const n = View.els.menuItems.length;
     const next = (index + n) % n;
-    if (next !== Model.state.menuIndex) this.play();
     Model.state.menuIndex = next;
     View.setMenuSelection(next);
-    // Update the dynamic subtitle
-    View.updateSubtitle(Model.menuItems[next].subtitle);
+    View.updateSubtitle(View.els.menuItems[next].dataset.subtitle);
   },
 
-  /* ========== Screen data loading ========== */
+  /* ---------- Screen data loading ---------- */
   async loadProjects() {
     View.renderFeatured(Model.featured);
-    if (Model.state.reposLoaded) return;
+    if (Model.state.reposLoaded || this.loadingRepos) return;
+    this.loadingRepos = true;
     const { repos, live } = await Model.fetchRepos();
     const status = live
       ? `${repos.length} repositories · live from GitHub`
       : "Showing pinned work · GitHub API unavailable right now";
     View.renderRepos(repos, status, Model);
     Model.state.reposLoaded = true;
+    this.loadingRepos = false;
   },
 
   loadSkills() {
@@ -117,59 +134,20 @@ const Controller = {
     View.animateSkillBars();
   },
 
-  /* ========== Sound ========== */
-  play() {
-    if (this.audioUnlocked) View.playSelect();
-  },
-
-  /* ========== HUD Controls (SFX, Music, Playlist) ========== */
-  bindHUDControls() {
-    // SFX toggle
-    View.els.pillSfx.addEventListener("click", () => {
-      View.toggleSFX(!Model.state.sfxOn);
-      this.play();
-    });
-
-    // Music toggle
-    View.els.pillMusic.addEventListener("click", () => {
-      View.toggleMusic(!Model.state.musicOn);
-    });
-
-    // Playlist toggle
-    View.els.pillPlaylist.addEventListener("click", () => {
-      View.togglePlaylist(!Model.state.playlistOpen);
-      this.play();
-    });
-
-    // Playlist close button
-    View.els.playlistClose.addEventListener("click", () => {
-      View.togglePlaylist(false);
-      this.play();
-    });
-
-    // Playlist track selection
-    View.els.playlistTracks.addEventListener("click", (e) => {
-      const track = e.target.closest(".playlist-track");
-      if (!track) return;
-      const index = parseInt(track.dataset.index, 10);
-      View.playBGM(index);
-      if (!Model.state.musicOn) View.toggleMusic(true);
-      this.play();
-    });
-
-    // BGM auto-advance to next track
-    View.els.bgm.addEventListener("ended", () => {
-      if (Model.playlist.length === 0) return;
-      const next = (Model.state.currentTrack + 1) % Model.playlist.length;
-      View.playBGM(next);
-    });
-  },
-
-  /* ========== Input bindings ========== */
+  /* ---------- Input bindings ---------- */
   bindMenu() {
     View.els.menuItems.forEach((item, i) => {
-      item.addEventListener("mouseenter", () => this.select(i));
-      item.addEventListener("click", () => this.goTo(item.dataset.target));
+      // Mouse only: touch taps must not leave a "hovered" state behind
+      item.addEventListener("pointerenter", e => {
+        if (e.pointerType === "mouse") this.select(i);
+      });
+      item.addEventListener("focus", () => this.select(i));
+    });
+
+    // One delegated listener: whatever was tapped inside an item counts
+    View.els.menuItems[0].parentElement.addEventListener("click", e => {
+      const item = e.target.closest("[data-page], .menu-item");
+      this.confirmMenu(View.els.menuItems.indexOf(item));
     });
 
     document.querySelectorAll("[data-back]").forEach(b =>
@@ -178,26 +156,112 @@ const Controller = {
     // Clicking the name always takes you home
     document.getElementById("big-name").addEventListener("click", () => {
       if (Model.state.screen !== "home") this.goTo("home");
-      else this.play();
     });
   },
 
   bindKeyboard() {
     addEventListener("keydown", e => {
-      if (Model.state.screen === "boot") return; // boot handles its own keys
-      if (Model.state.screen === "home") {
-        if (e.key === "ArrowDown") { this.select(Model.state.menuIndex + 1); e.preventDefault(); }
-        else if (e.key === "ArrowUp") { this.select(Model.state.menuIndex - 1); e.preventDefault(); }
-        else if (e.key === "Enter") {
-          this.goTo(View.els.menuItems[Model.state.menuIndex].dataset.target);
+      if (this.booting()) return;
+      if (this.confirming) { e.preventDefault(); return; }
+
+      if (e.key === "Escape") {
+        if (Model.state.playlistOpen) {
+          SFX.play("back");
+          this.setPlaylist(false);
+        } else if (Model.state.screen !== "home" && !this.transitioning) {
+          SFX.play("back");
+          this.goTo("home");
         }
-      } else if (e.key === "Escape") {
-        this.goTo("home");
+        return;
+      }
+
+      if (Model.state.screen !== "home" || Model.state.playlistOpen) return;
+
+      if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+        e.preventDefault();
+        const step = e.key === "ArrowDown" ? 1 : -1;
+        const count = View.els.menuItems.length;
+        const next = (Model.state.menuIndex + step + count) % count;
+        this.select(next);
+        // keep keyboard focus in step if it is already inside the menu
+        if (document.activeElement.classList.contains("menu-item")) {
+          View.els.menuItems[next].focus();
+        }
+        SFX.play("hover");        // throttled, so focus + arrow ticks only once
+      } else if (e.key === "Enter" && !e.repeat) {
+        // A focused button or link already handles its own Enter
+        if (e.target.closest && e.target.closest("button, a")) return;
+        SFX.play("confirm");
+        this.confirmMenu(Model.state.menuIndex);
       }
     });
   },
 
-  /* ========== Contact form ========== */
+  /* ---------- Music and playlist (the <audio> lives outside all screens) ---------- */
+  setPlaylist(open) {
+    View.togglePlaylist(open);
+  },
+
+  bindAudio() {
+    // config.js wins; Model.playlist is used only if AUDIO_CONFIG.bgm is empty
+    const tracks = AUDIO_CONFIG.bgm.length ? AUDIO_CONFIG.bgm : (Model.playlist || []);
+    View.renderPlaylist(tracks);
+    BGM.init(View.els.bgm, tracks, bgm => View.renderMusic(bgm));
+
+    View.els.pillSfx.addEventListener("click", () => View.toggleSFX(!Model.state.sfxOn));
+    View.els.pillMusic.addEventListener("click", () => BGM.toggle());
+    View.els.pillPlaylist.addEventListener("click", () =>
+      this.setPlaylist(!Model.state.playlistOpen));
+    View.els.playlistClose.addEventListener("click", () => this.setPlaylist(false));
+    View.els.playlistTracks.addEventListener("click", e => {
+      const track = e.target.closest(".playlist-track");
+      if (track) BGM.select(Number(track.dataset.index));
+    });
+  },
+
+  /* ---------- Site-wide UI sounds (delegated, so new cards are covered) ---------- */
+  bindSounds() {
+    const SELECTOR = "a[href], button, #big-name";
+    const canHover = matchMedia("(hover: hover)");
+    const hit = node => node && node.closest ? node.closest(SELECTOR) : null;
+
+    // Retry the unlock on every gesture (iOS can suspend audio again later)
+    ["pointerdown", "pointerup", "touchend", "keydown"].forEach(type =>
+      addEventListener(type, () => SFX.unlock(), { capture: true, passive: true }));
+
+    // Content that appears under a resting cursor must not tick by itself
+    let pressX = -1, pressY = -1;
+    addEventListener("pointerdown", e => { pressX = e.clientX; pressY = e.clientY; }, true);
+
+    // pointerover + relatedTarget behaves like a delegated mouseenter
+    document.addEventListener("pointerover", e => {
+      if (e.pointerType === "touch" || !canHover.matches || this.transitioning) return;
+      const el = hit(e.target);
+      if (!el || el === hit(e.relatedTarget)) return;
+      if (e.clientX === pressX && e.clientY === pressY) return;
+      SFX.play("hover");
+    });
+
+    // Keyboard focus only: clicking also focuses, but isn't :focus-visible
+    document.addEventListener("focusin", e => {
+      const el = hit(e.target);
+      if (el && el.matches(":focus-visible")) SFX.play("hover");
+    });
+
+    // Bubble phase: runs after the element's own handler, so toggles
+    // are already in their new state. Enter on a button arrives here too.
+    document.addEventListener("click", e => {
+      const el = hit(e.target);
+      if (!el) return;
+      const goingBack =
+        el.matches("[data-back], #playlist-close") ||
+        (el.id === "pill-playlist" && !Model.state.playlistOpen) ||
+        (el.id === "big-name" && Model.state.screen !== "home");
+      SFX.play(goingBack ? "back" : "confirm");
+    });
+  },
+
+  /* ---------- Contact form (relayed via formsubmit.co, mailto fallback) ---------- */
   bindContactForm() {
     const form = document.getElementById("contact-form");
     if (!form) return;
@@ -207,7 +271,7 @@ const Controller = {
     form.addEventListener("submit", async e => {
       e.preventDefault();
       const data = Object.fromEntries(new FormData(form).entries());
-      if (data._honey) return;
+      if (data._honey) return;  // honeypot caught a bot
       if (!data.name.trim() || !data.email.trim() || !data.message.trim()) {
         status.textContent = "Fill in all three fields first.";
         return;
@@ -228,8 +292,8 @@ const Controller = {
         if (!res.ok) throw new Error(res.status);
         status.textContent = "Sent! I'll get back to you soon.";
         form.reset();
-        this.play();
       } catch {
+        // relay unreachable: open the visitor's own mail app instead
         status.textContent = "Couldn't reach the relay, opening your email app instead…";
         const subject = encodeURIComponent(`Portfolio message from ${data.name}`);
         const body = encodeURIComponent(`${data.message}\n\nReply to: ${data.email}`);

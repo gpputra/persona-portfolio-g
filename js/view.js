@@ -8,25 +8,25 @@ const View = {
   reducedMotion: matchMedia("(prefers-reduced-motion: reduce)").matches,
 
   els: {
-    screens:      {},
-    menuItems:    [],
-    bootOverlay:  document.getElementById("boot-overlay"),
-    wipe:         document.getElementById("wipe"),
-    featGrid:     document.getElementById("feat-grid"),
-    repoGrid:     document.getElementById("repo-grid"),
-    repoStatus:   document.getElementById("repo-status"),
-    skillsBody:   document.getElementById("skills-body"),
-    sfx:          document.getElementById("sfx-select"),
-    bgm:          document.getElementById("bgm-player"),
-    cursor:       document.getElementById("cursor"),
-    clock:        document.getElementById("hud-clock"),
-    subtitle:     document.getElementById("hud-subtitle"),
-    pillSfx:      document.getElementById("pill-sfx"),
-    pillMusic:    document.getElementById("pill-music"),
+    screens: {},
+    menuItems: [],
+    bootOverlay: document.getElementById("boot-overlay"),
+    wipe: document.getElementById("wipe"),
+    featGrid: document.getElementById("feat-grid"),
+    repoGrid: document.getElementById("repo-grid"),
+    repoStatus: document.getElementById("repo-status"),
+    skillsBody: document.getElementById("skills-body"),
+    bgm: document.getElementById("bgm-player"),
+    cursor: document.getElementById("cursor"),
+    clock: document.getElementById("hud-clock"),
+    subtitle: document.getElementById("hud-subtitle-text"),
+    nowTitle: document.getElementById("now-title"),
+    pillSfx: document.getElementById("pill-sfx"),
+    pillMusic: document.getElementById("pill-music"),
     pillPlaylist: document.getElementById("pill-playlist"),
-    playlistPanel:document.getElementById("playlist-panel"),
-    playlistClose:document.getElementById("playlist-close"),
-    playlistTracks:document.getElementById("playlist-tracks"),
+    playlistPanel: document.getElementById("playlist-panel"),
+    playlistClose: document.getElementById("playlist-close"),
+    playlistTracks: document.getElementById("playlist-tracks"),
   },
 
   init() {
@@ -35,21 +35,22 @@ const View = {
     });
     this.els.menuItems = [...document.querySelectorAll(".menu-item")];
     document.querySelectorAll("[data-ransom]").forEach(el => this.ransomize(el));
-    this.els.sfx.volume = 0.45;
-    this.els.bgm.volume = 0.3;
+    Menu.build(this.els.menuItems);
     this.startClock();
-    this.startParallax();
     this.startCursor();
-    this.updateSubtitle(Model.menuItems[0].subtitle);
-    document.body.classList.add("loaded");
+    FX.init();
+    Media.init();
+    Media.show("home");
+    this.updateSubtitle(this.els.menuItems[0].dataset.subtitle);
   },
 
   /* ========== BOOT OVERLAY ========== */
   dismissBoot(callback) {
     const overlay = this.els.bootOverlay;
     overlay.classList.add("dismissed");
-    // Show the main shell
-    document.body.classList.add("app-ready");
+    // "loaded" starts the menu entrance, so add it only once the menu is visible
+    document.body.classList.add("app-ready", "loaded");
+    document.body.dataset.screen = "home";
     setTimeout(() => {
       overlay.style.display = "none";
       if (callback) callback();
@@ -95,20 +96,27 @@ const View = {
       s[name].scrollTop = 0;
     }
     document.body.dataset.screen = name;
+    Media.show(name);
   },
 
   setMenuSelection(index) {
-    this.els.menuItems.forEach((m, j) => m.classList.toggle("sel", j === index));
+    this.els.menuItems.forEach((m, j) => {
+      m.classList.toggle("sel", j === index);
+      if (j === index) m.setAttribute("aria-current", "true");
+      else m.removeAttribute("aria-current");
+    });
   },
 
   /* ========== Dynamic HUD subtitle ========== */
   updateSubtitle(text) {
     const el = this.els.subtitle;
+    if (el.textContent === text) return;
+    clearTimeout(this.subtitleTimer);        // fast hovering must not queue updates
     el.style.opacity = "0";
-    setTimeout(() => {
+    this.subtitleTimer = setTimeout(() => {
       el.textContent = text || "";
       el.style.opacity = "1";
-    }, 150);
+    }, 100);
   },
 
   /* ========== Wipe transition ========== */
@@ -118,53 +126,32 @@ const View = {
     w.classList.remove("go"); void w.offsetWidth;
     w.classList.add("go");
     setTimeout(swap, 340);
-    setTimeout(done, 720);
+    setTimeout(done, 700);
   },
 
-  /* ========== Sound ========== */
-  playSelect() {
-    if (!Model.state.sfxOn) return;
-    try {
-      this.els.sfx.currentTime = 0;
-      const p = this.els.sfx.play();
-      if (p && p.catch) p.catch(() => {});
-    } catch {}
-  },
+  /* ========== Music UI (playback itself lives in audio.js) ========== */
+  renderMusic(bgm) {
+    Model.state.musicOn = bgm.wanted;
+    Model.state.currentTrack = bgm.index;
+    this.els.pillMusic.textContent = bgm.wanted ? "MUSIC ON" : "MUSIC OFF";
+    this.els.pillMusic.classList.toggle("active", bgm.wanted);
+    this.els.pillMusic.setAttribute("aria-pressed", bgm.wanted);
 
-  /* ========== BGM ========== */
-  playBGM(index) {
-    const track = Model.playlist[index];
-    if (!track) return;
-    Model.state.currentTrack = index;
-    this.els.bgm.src = track.src;
-    this.els.bgm.play().catch(() => {});
-    this.updatePlaylistUI();
-  },
+    this.els.playlistTracks.querySelectorAll(".playlist-track").forEach((el, i) => {
+      el.classList.toggle("active", i === bgm.index);
+      el.classList.toggle("paused", i === bgm.index && !bgm.wanted);
+      el.setAttribute("aria-current", i === bgm.index);
+    });
 
-  stopBGM() {
-    this.els.bgm.pause();
-    this.els.bgm.currentTime = 0;
-    Model.state.currentTrack = -1;
-    this.updatePlaylistUI();
-  },
-
-  toggleMusic(on) {
-    Model.state.musicOn = on;
-    this.els.pillMusic.textContent = on ? "MUSIC ON" : "MUSIC OFF";
-    this.els.pillMusic.classList.toggle("active", on);
-    if (on) {
-      if (Model.playlist.length > 0 && Model.state.currentTrack < 0) {
-        this.playBGM(0);
-      } else if (Model.state.currentTrack >= 0) {
-        this.els.bgm.play().catch(() => {});
-      }
-    } else {
-      this.els.bgm.pause();
-    }
+    const track = bgm.tracks[bgm.index];
+    this.els.nowTitle.textContent = bgm.message ? bgm.message
+      : !track ? "Nothing playing"
+        : bgm.wanted ? track.title : `${track.title} (paused)`;
   },
 
   toggleSFX(on) {
     Model.state.sfxOn = on;
+    SFX.enabled = on;
     this.els.pillSfx.textContent = on ? "SFX ON" : "SFX OFF";
     this.els.pillSfx.classList.toggle("active", on);
   },
@@ -173,25 +160,29 @@ const View = {
     Model.state.playlistOpen = open;
     this.els.playlistPanel.classList.toggle("hidden", !open);
     this.els.pillPlaylist.classList.toggle("active", open);
+    this.els.pillPlaylist.setAttribute("aria-expanded", open);
   },
 
-  renderPlaylist() {
+  renderPlaylist(tracks) {
     const container = this.els.playlistTracks;
-    if (Model.playlist.length === 0) return; // keep the placeholder text
-    container.innerHTML = "";
-    Model.playlist.forEach((track, i) => {
-      const div = document.createElement("div");
-      div.className = "playlist-track";
-      div.textContent = track.title;
-      div.dataset.index = i;
-      if (i === Model.state.currentTrack) div.classList.add("active");
-      container.appendChild(div);
-    });
-  },
-
-  updatePlaylistUI() {
-    this.els.playlistTracks.querySelectorAll(".playlist-track").forEach((el, i) => {
-      el.classList.toggle("active", i === Model.state.currentTrack);
+    container.textContent = "";
+    if (!tracks.length) {
+      container.innerHTML = '<p class="playlist-empty">No tracks yet. Add them in js/config.js.</p>';
+      return;
+    }
+    tracks.forEach((track, i) => {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "playlist-track";
+      btn.dataset.index = i;
+      [["track-no", String(i + 1).padStart(2, "0")], ["track-title", track.title], ["track-mark", "▶"]]
+        .forEach(([cls, text]) => {
+          const span = document.createElement("span");
+          span.className = cls;
+          span.textContent = text;
+          btn.appendChild(span);
+        });
+      container.appendChild(btn);
     });
   },
 
@@ -216,7 +207,7 @@ const View = {
       a.style.setProperty("--d", i * 70 + "ms");
       a.innerHTML = `
         ${this.cardThumb(f.img)}
-        <span class="lang" style="--lc:${f.color}">${f.tag}</span>
+        <span class="lang">${f.tag}</span>
         <h3>${f.live ? '<span class="live-dot"></span>' : ""}${this.splitTitle(f.title)}</h3>
         <p>${f.desc}</p>
         <div class="meta"><span>${f.live ? "LIVE NOW" : "HIGHLIGHT"}</span><span class="go">${f.cta}</span></div>`;
@@ -233,7 +224,6 @@ const View = {
       a.href = r.html_url; a.target = "_blank"; a.rel = "noopener";
       a.style.setProperty("--tilt", ((this.hash(r.name) % 5) - 2) * 0.8 + "deg");
       a.style.setProperty("--d", i * 70 + "ms");
-      a.style.setProperty("--lc", model.langColors[r.language] || "#D90429");
       const pretty = r.name.replace(/[-_]/g, " ").replace(/\b\w/g, c => c.toUpperCase());
       const img = model.projectImages[r.name] || `assets/projects/${r.name}.png`;
       a.innerHTML = `
@@ -270,13 +260,16 @@ const View = {
 
   animateSkillBars() {
     const fills = this.els.skillsBody.querySelectorAll(".fill");
-    fills.forEach(f => { f.style.width = "0"; });
+    fills.forEach(f => { f.style.transform = "scaleX(0)"; });
     requestAnimationFrame(() => requestAnimationFrame(() => {
-      fills.forEach((f, i) => setTimeout(() => { f.style.width = f.dataset.v + "%"; }, i * 60));
+      fills.forEach((f, i) => {
+        f.style.transitionDelay = i * 40 + "ms";
+        f.style.transform = `scaleX(${f.dataset.v / 100})`;
+      });
     }));
   },
 
-  /* ========== Ambient: clock, parallax, cursor ========== */
+  /* ========== Ambient: clock and cursor ========== */
   startClock() {
     const update = () => {
       const now = new Date();
@@ -284,33 +277,10 @@ const View = {
       const dd = String(now.getDate()).padStart(2, "0");
       const hh = String(now.getHours()).padStart(2, "0");
       const min = String(now.getMinutes()).padStart(2, "0");
-      this.els.clock.textContent = `${mm}/${dd} — ${hh}:${min}`;
+      this.els.clock.textContent = `${mm}/${dd} - ${hh}:${min}`;
     };
     update();
     setInterval(update, 1000);
-  },
-
-  startParallax() {
-    if (this.reducedMotion) return;
-    const stripes = document.getElementById("bg-stripes");
-    const halftone = document.getElementById("bg-halftone");
-    const arts = [...document.querySelectorAll(".menu-art")];
-    let tx = 0, ty = 0, cx = 0, cy = 0;
-    addEventListener("mousemove", e => {
-      tx = e.clientX / innerWidth - 0.5;
-      ty = e.clientY / innerHeight - 0.5;
-    }, { passive: true });
-    const loop = () => {
-      cx += (tx - cx) * 0.06; cy += (ty - cy) * 0.06;
-      stripes.style.transform = `translate(${cx * 22}px, ${cy * 14}px)`;
-      halftone.style.transform = `translate(${cx * -34}px, ${cy * -22}px)`;
-      arts.forEach(a => {
-        if (a.isConnected)
-          a.style.transform = `translate(${cx * 14}px, ${cy * 9}px) scale(1.04)`;
-      });
-      requestAnimationFrame(loop);
-    };
-    loop();
   },
 
   startCursor() {

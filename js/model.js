@@ -28,11 +28,11 @@ const Model = {
 
   // Menu items with subtitle descriptions for the dynamic HUD subtitle
   menuItems: [
-    { target: "projects",     subtitle: "Browse my featured work and GitHub repositories" },
-    { target: "skills",       subtitle: "Technical proficiencies and spoken languages" },
-    { target: "about",        subtitle: "Who I am and where I come from" },
+    { target: "projects", subtitle: "Browse my featured work and GitHub repositories" },
+    { target: "skills", subtitle: "Technical proficiencies and spoken languages" },
+    { target: "about", subtitle: "Who I am and where I come from" },
     { target: "certificates", subtitle: "Courses, certifications, and qualifications" },
-    { target: "contact",      subtitle: "Get in touch — email, socials, and more" },
+    { target: "contact", subtitle: "Get in touch — email, socials, and more" },
   ],
 
   // ---- BGM Playlist ----
@@ -125,24 +125,32 @@ const Model = {
 
   // ---- Skills screen ----
   skills: [
-    { group: "AI · ML · Data Science", items: [
-      ["Python · pandas · NumPy", 92], ["TensorFlow / Keras · PyTorch", 88],
-      ["scikit-learn · XGBoost", 86], ["CNNs & Transfer Learning", 85],
-      ["NLP & Transformers", 82], ["Computer Vision · MediaPipe", 86],
-    ]},
-    { group: "Web & Full-Stack", items: [
-      ["JavaScript / TypeScript", 86], ["React · React Native · Next.js", 84],
-      ["Node.js · REST APIs", 80], ["TensorFlow.js (in-browser ML)", 84],
-      ["PHP · SQL · PostgreSQL", 74], ["UX Design · Figma · Adobe XD", 82],
-    ]},
-    { group: "Cloud & Engineering", items: [
-      ["Git & GitHub", 88], ["AWS · Azure · GCP", 74],
-      ["Docker · Firebase", 76], ["Agile · PRINCE2 Agile", 80],
-      ["Tableau · Power BI", 72], ["Bash · PowerShell", 75],
-    ]},
-    { group: "Spoken Languages", items: [
-      ["English · Bengali · Hindi · Urdu", 100], ["Japanese (JLPT N4)", 62], ["Mandarin", 30],
-    ]},
+    {
+      group: "AI · ML · Data Science", items: [
+        ["Python · pandas · NumPy", 92], ["TensorFlow / Keras · PyTorch", 88],
+        ["scikit-learn · XGBoost", 86], ["CNNs & Transfer Learning", 85],
+        ["NLP & Transformers", 82], ["Computer Vision · MediaPipe", 86],
+      ]
+    },
+    {
+      group: "Web & Full-Stack", items: [
+        ["JavaScript / TypeScript", 86], ["React · React Native · Next.js", 84],
+        ["Node.js · REST APIs", 80], ["TensorFlow.js (in-browser ML)", 84],
+        ["PHP · SQL · PostgreSQL", 74], ["UX Design · Figma · Adobe XD", 82],
+      ]
+    },
+    {
+      group: "Cloud & Engineering", items: [
+        ["Git & GitHub", 88], ["AWS · Azure · GCP", 74],
+        ["Docker · Firebase", 76], ["Agile · PRINCE2 Agile", 80],
+        ["Tableau · Power BI", 72], ["Bash · PowerShell", 75],
+      ]
+    },
+    {
+      group: "Spoken Languages", items: [
+        ["English · Bengali · Hindi · Urdu", 100], ["Japanese (JLPT N4)", 62], ["Mandarin", 30],
+      ]
+    },
   ],
 
   // ---- Data fetching ----
