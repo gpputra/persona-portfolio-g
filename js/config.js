@@ -36,7 +36,18 @@ const AUDIO_CONFIG = {
    An array is also allowed: the first file that loads wins, e.g.
      projects: ["media/projects.webm", "media/projects.jpg"],
    If a page's file is missing, the home media is shown instead. */
-const PAGE_MEDIA = {
+
+/*======================HERO BACKGROUD MOBILE SETTING ====================*/
+// const PAGE_MEDIA = {
+//   home: ["media/home.mp4", "video/hero-bg.mp4", "video/hero-bg.gif"],
+//   projects: "media/projects.gif",
+//   skills: "media/skills.mp4",
+//   about: "media/about.webp",
+//   certificates: "media/certificates.jpg",
+//   contact: "media/yandere-chan-joker-moewalls-com.mp4",
+// };
+
+const DESKTOP_MEDIA = {
   home: ["media/home.mp4", "video/hero-bg.mp4", "video/hero-bg.gif"],
   projects: "media/projects.gif",
   skills: "media/skills.mp4",
@@ -44,6 +55,24 @@ const PAGE_MEDIA = {
   certificates: "media/certificates.jpg",
   contact: "media/yandere-chan-joker-moewalls-com.mp4",
 };
+
+const MOBILE_MEDIA = {
+  // Taruh file khusus Hero Mobile (vertikal 9:16) di folder public/media/
+  home: ["media/home-mobile.mp4", "media/home-mobile.gif"],
+  // Opsional: buka komentar di bawah jika halaman lain juga ingin dibedakan di HP
+  // projects: "media/projects-mobile.gif",
+  // skills: "media/skills-mobile.mp4",
+};
+
+const PAGE_MEDIA = new Proxy(DESKTOP_MEDIA, {
+  get(target, prop) {
+    const isMobile = window.matchMedia("(max-width: 768px)").matches;
+    if (isMobile && prop in MOBILE_MEDIA && MOBILE_MEDIA[prop]) {
+      return MOBILE_MEDIA[prop];
+    }
+    return target[prop];
+  },
+});
 
 /* Turns a configured path into the URLs worth trying, in order. */
 function assetCandidates(path) {
