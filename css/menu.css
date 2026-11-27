@@ -1,0 +1,470 @@
+/* =====================================================================
+   MENU.CSS — Persona 5 style main menu (load after style.css)
+   Animations and transitions use transform and opacity only.
+   clip-path shapes are static; colour changes are instant.
+
+   1 Layout & hover physics · 2 Ransom letters · 3 Slash bar
+   4 Star cursor · 5 Entrance & wave · 6 Confirm burst · 7 Responsive
+   ===================================================================== */
+
+:root {
+  --p5-spring: cubic-bezier(.22, 1.56, .36, 1);
+}
+
+/* ============ 1. LAYOUT & HOVER PHYSICS ============ */
+#menu {
+  --menu-size: clamp(1.7rem, min(7cqh, 3.9vw), 3.2rem);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  margin-top: 2.6vh;
+  padding-left: calc(var(--menu-size) * 1.15);
+  /* room for the star */
+}
+
+.menu-item {
+  --x: calc((var(--i) % 3) * 14px);
+  position: relative;
+  z-index: 50;
+  pointer-events: auto;
+  margin-top: -4px;
+  /* tight, overlapping stack */
+  padding: .07em .35em;
+  background: none;
+  border: 0;
+  color: var(--white);
+  font-size: var(--menu-size);
+  line-height: 1;
+  text-align: left;
+  text-transform: uppercase;
+  white-space: nowrap;
+  transform: translate3d(var(--x), 0, 0) rotate(-6deg);
+  transform-origin: left center;
+  transition: transform .42s var(--p5-spring);
+  cursor: pointer;
+}
+
+.menu-item:first-child {
+  margin-top: 0;
+}
+
+/* .sel is set by mouse hover, keyboard focus, arrow keys and taps */
+.menu-item.sel {
+  z-index: 51;
+  transform: translate3d(calc(var(--x) + 18px), 0, 0) rotate(-3deg) scale(1.08);
+}
+
+/* letters, bar and star never intercept: the button is the only target */
+.menu-item * {
+  pointer-events: none;
+}
+
+/* invisible extension so the visible star and bar tail are clickable too */
+.menu-item.sel::after {
+  content: "";
+  position: absolute;
+  inset: 0 -1.1em 0 -1.3em;
+}
+
+.menu-item:focus-visible {
+  outline: none;
+}
+
+.menu-item:focus-visible .mi-tail {
+  outline: 2px dashed var(--white);
+  outline-offset: 2px;
+}
+
+.mi-body {
+  position: relative;
+  display: block;
+  isolation: isolate;
+}
+
+/* ============ 2. RANSOM-NOTE LETTERS ============ */
+.menu-label {
+  display: flex;
+  align-items: center;
+}
+
+.mi-l {
+  position: relative;
+  display: inline-block;
+  margin: 0 .022em;
+  transform: translate3d(0, var(--y), 0) rotate(var(--r)) scale(var(--s));
+}
+
+/* three typefaces, sized so their capitals look related */
+.mi-l.f0 {
+  font-family: 'Anton', Impact, 'Arial Narrow', sans-serif;
+  font-size: 1em;
+}
+
+.mi-l.f1 {
+  font-family: 'Archivo Black', 'Arial Black', sans-serif;
+  font-size: .8em;
+}
+
+.mi-l.f2 {
+  font-family: 'Bebas Neue', 'Anton', Impact, sans-serif;
+  font-size: 1.1em;
+}
+
+.mi-l.cut {
+  margin: 0 .075em;
+}
+
+/* the paper cut-out: always present, revealed on the selected item */
+.mi-l.cut::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  inset: -.02em -.075em;
+  opacity: 0;
+  transform: rotate(calc(var(--br) * 3)) scale(.3);
+  transition: transform .32s var(--p5-spring), opacity .08s linear;
+}
+
+.mi-l.cut-k::before {
+  background: var(--black);
+  box-shadow: 0 0 0 1px var(--white);
+  clip-path: polygon(-4% 3%, 103% -2%, 96% 104%, 2% 97%);
+}
+
+.mi-l.cut-w::before {
+  background: var(--white);
+  clip-path: polygon(3% -3%, 98% 4%, 105% 97%, -3% 102%);
+}
+
+.menu-item.sel .mi-l.cut::before {
+  opacity: 1;
+  transform: rotate(var(--br)) scale(1);
+  transition-delay: calc(var(--k) * 26ms);
+}
+
+.mi-g {
+  position: relative;
+  display: block;
+  padding: .04em .015em;
+  line-height: 1.02;
+  text-shadow: .075em .075em 0 var(--black), -1px -1px 0 var(--black), 1px -1px 0 var(--black), -1px 1px 0 var(--black);
+}
+
+.menu-item.sel .cut-k .mi-g {
+  color: var(--white);
+  text-shadow: none;
+}
+
+.menu-item.sel .cut-w .mi-g {
+  color: var(--black);
+  text-shadow: none;
+}
+
+/* ============ 3. JAGGED SLASH BAR ============ */
+.mi-fx {
+  position: absolute;
+  z-index: -1;
+  top: -.08em;
+  bottom: -.08em;
+  left: -.5em;
+  right: -1.25em;
+  pointer-events: none;
+  /* the oversized shapes must not steal hover */
+}
+
+.mi-fx>span {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  transform-origin: left center;
+}
+
+.mi-shadow,
+.mi-blade,
+.mi-tail {
+  transform: scaleX(0);
+  transition: transform .36s var(--p5-spring), opacity .06s linear;
+}
+
+/* Layer 1: offset black shadow */
+.mi-shadow {
+  background: var(--black);
+  translate: 8px 7px;
+  clip-path: polygon(0 18%, 13% 30%, 15% 4%, 57% 17%, 59% 0, 91% 15%, 100% 2%, 93% 52%, 99% 66%,
+      84% 70%, 86% 100%, 52% 84%, 49% 99%, 14% 82%, 1% 98%, 5% 60%);
+}
+
+/* Layer 2: crimson blade */
+.mi-blade,
+.mi-flash {
+  clip-path: polygon(0 44%, 9% 9%, 11% 24%, 58% 8%, 59% 18%, 100% 0, 89% 43%, 96% 47%,
+      80% 96%, 77% 80%, 37% 91%, 36% 79%, 3% 93%, 7% 66%);
+}
+
+.mi-blade {
+  background: var(--red);
+}
+
+/* white accent tail: sized in em so it always sits past the last letter */
+.mi-fx>.mi-tail {
+  left: auto;
+  width: 1.15em;
+  background: var(--white);
+  clip-path: polygon(46% 18%, 92% 8%, 58% 45%, 78% 47%, 14% 90%, 34% 55%, 8% 54%);
+}
+
+.menu-item.sel .mi-shadow,
+.menu-item.sel .mi-blade,
+.menu-item.sel .mi-tail {
+  opacity: 1;
+  transform: scaleX(1);
+}
+
+.menu-item.sel .mi-blade {
+  transition-delay: .035s;
+}
+
+.menu-item.sel .mi-tail {
+  transition-delay: .09s;
+}
+
+/* ============ 4. SPINNING STAR CURSOR ============ */
+.mi-star {
+  position: absolute;
+  z-index: 2;
+  top: 50%;
+  left: -1.4em;
+  width: 1.15em;
+  height: 1.15em;
+  margin-top: -.575em;
+  opacity: 0;
+  pointer-events: none;
+  transform: scale(0) rotate(-150deg);
+  transition: transform .4s var(--p5-spring), opacity .08s linear;
+}
+
+.menu-item.sel .mi-star {
+  opacity: 1;
+  transform: none;
+}
+
+.mi-star svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.menu-item.sel .mi-star svg {
+  animation: starSpin 1.5s linear infinite;
+}
+
+@keyframes starSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ============ 5. STAGGERED ENTRANCE & LETTER WAVE ============ */
+/* replays every time the Home screen is shown again */
+.loaded #screen-home.active .mi-body {
+  animation: miEnter .5s var(--p5-spring) calc(var(--i) * 50ms) backwards;
+}
+
+@keyframes miEnter {
+  from {
+    opacity: 0;
+    transform: translate3d(96px, 54px, 0) rotate(5deg);
+  }
+}
+
+.loaded .menu-item.sel .mi-g {
+  animation: miWave .44s var(--p5-spring) calc(var(--k) * 28ms);
+}
+
+@keyframes miWave {
+  30% {
+    transform: translate3d(0, -.17em, 0) rotate(-9deg) scale(1.12);
+  }
+
+  55% {
+    transform: translate3d(0, .06em, 0) rotate(6deg);
+  }
+
+  78% {
+    transform: translate3d(0, -.025em, 0) rotate(-2deg);
+  }
+}
+
+/* ============ 6. CONFIRM BURST (200ms) ============
+   0–57ms white hit · 57–114ms black hit · 114–200ms crimson launch */
+#menu.confirming .menu-item {
+  pointer-events: none;
+}
+
+#screen-home #menu.confirming .menu-item.confirm .mi-body {
+  animation: miLaunch .2s linear forwards;
+}
+
+@keyframes miLaunch {
+  0% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+
+  16% {
+    transform: translate3d(-12px, 0, 0) scale(1.07);
+  }
+
+  57% {
+    transform: translate3d(0, 0, 0) scale(1.03);
+    animation-timing-function: cubic-bezier(.6, 0, 1, .6);
+  }
+
+  100% {
+    transform: translate3d(90px, 0, 0) scale(1.06);
+  }
+}
+
+/* the rest of the menu snaps away */
+#screen-home #menu.confirming .menu-item:not(.confirm) .mi-body {
+  animation: miSnapAway .12s cubic-bezier(.7, 0, 1, .5) forwards;
+}
+
+@keyframes miSnapAway {
+  to {
+    opacity: 0;
+    transform: translate3d(-130px, 0, 0) scale(.92);
+  }
+}
+
+/* two-frame strobe: hard cuts, no fading */
+.menu-item.confirm .mi-flash-w {
+  background: var(--white);
+  animation: strobeWhite .2s step-end forwards;
+}
+
+.menu-item.confirm .mi-flash-k {
+  background: var(--black);
+  animation: strobeBlack .2s step-end forwards;
+}
+
+@keyframes strobeWhite {
+  0% {
+    opacity: 1;
+  }
+
+  28.5%,
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes strobeBlack {
+  0% {
+    opacity: 0;
+  }
+
+  28.5% {
+    opacity: 1;
+  }
+
+  57%,
+  100% {
+    opacity: 0;
+  }
+}
+
+/* letters go plain for the strobe so they stay readable on both frames */
+.menu-item.confirm .mi-l.cut::before {
+  opacity: 0;
+  transition: none;
+}
+
+.menu-item.confirm .mi-l .mi-g {
+  color: var(--white);
+  text-shadow: none;
+  animation: none;
+}
+
+/* crimson copy of each letter, shown only during the white frame */
+.menu-item.confirm .mi-g::after {
+  content: attr(data-c);
+  position: absolute;
+  inset: 0;
+  padding: inherit;
+  color: var(--red);
+  animation: strobeWhite .2s step-end forwards;
+}
+
+/* diagonal crimson / white slash burst */
+.mi-burst::before,
+.mi-burst::after {
+  content: "";
+  position: absolute;
+  inset: -55% -6%;
+}
+
+.mi-burst::before {
+  background: var(--red);
+  clip-path: polygon(0 66%, 34% 46%, 29% 38%, 100% 4%, 70% 39%, 84% 40%, 47% 63%, 55% 68%, 4% 92%, 25% 66%);
+}
+
+.mi-burst::after {
+  background: var(--white);
+  clip-path: polygon(8% 84%, 52% 54%, 48% 51%, 96% 17%, 66% 50%, 73% 51%, 33% 74%, 39% 77%);
+}
+
+.menu-item.confirm .mi-burst {
+  animation: miBurst .2s cubic-bezier(.1, .8, .2, 1) forwards;
+}
+
+@keyframes miBurst {
+  0% {
+    opacity: 1;
+    transform: scaleX(.35) scaleY(.7);
+  }
+
+  70% {
+    opacity: 1;
+    transform: scaleX(1.35) scaleY(1);
+  }
+
+  100% {
+    opacity: .85;
+    transform: scaleX(1.35) scaleY(.85);
+  }
+}
+
+/* ============ 7. RESPONSIVE ============ */
+@media (max-width: 768px) {
+  #menu {
+    --menu-size: clamp(1.5rem, min(7.6cqh, 10vw), 2.75rem);
+    margin-top: 2.2cqh;
+    padding-left: calc(var(--menu-size) * 1.1);
+  }
+
+  .menu-item {
+    --x: calc((var(--i) % 3) * 9px);
+    margin-top: -3px;
+    padding-block: .1em;
+  }
+
+  .menu-item:first-child {
+    margin-top: 0;
+  }
+}
+
+/* Phones on their side: menu sits beside the identity block */
+@media (orientation: landscape) and (max-height: 560px) {
+  #menu {
+    --menu-size: clamp(1.25rem, min(13cqh, 5vw), 2.5rem);
+    flex: 0 0 auto;
+    margin: 0 5vw 0 0;
+    padding-left: calc(var(--menu-size) * 1.1);
+  }
+
+  .menu-item {
+    margin-top: -4px;
+    padding-block: .04em;
+  }
+}
