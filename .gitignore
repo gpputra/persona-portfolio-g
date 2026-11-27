@@ -1,0 +1,15 @@
+video-original/
+node_modules
+# Folder hasil build / produksi (server deploy akan membuatnya ulang secara otomatis)
+dist/
+build/
+
+# File rahasia / konfigurasi lingkungan lokal
+.env
+.env.local
+
+# File sampah sistem & log
+.DS_Store
+Thumbs.db
+*.log
+
