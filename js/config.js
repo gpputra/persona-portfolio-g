@@ -46,23 +46,51 @@ const AUDIO_CONFIG = {
 //   certificates: "media/certificates.jpg",
 //   contact: "media/yandere-chan-joker-moewalls-com.mp4",
 // };
-
 const DESKTOP_MEDIA = {
-  home: ["media/home.mp4", "video/hero-bg.mp4", "video/hero-bg.gif"],
-  projects: "media/projects.gif",
+  home: ["media/hero-bg.mp4", "media/hero-bg.gif"],
+  projects: "media/AnnTakamaki.mp4",
   skills: "media/skills.mp4",
-  about: "media/about.webp",
-  certificates: "media/certificates.jpg",
+  about: "media/ryuji-sakamoto.mp4",
+  certificates: "media/kasumi-yoshizawa.mp4",
   contact: "media/yandere-chan-joker-moewalls-com.mp4",
 };
 
 const MOBILE_MEDIA = {
-  // Taruh file khusus Hero Mobile (vertikal 9:16) di folder public/media/
-  home: ["media/home-mobile.mp4", "media/home-mobile.gif"],
-  // Opsional: buka komentar di bawah jika halaman lain juga ingin dibedakan di HP
-  // projects: "media/projects-mobile.gif",
-  // skills: "media/skills-mobile.mp4",
+  home: ["media/joker.mp4", "media/home-mobile.gif"],
+  projects: "media/AnnTakamaki.mp4",
+  skills: "media/skills.mp4",
+  about: "media/ryuji-sakamoto.mp4",
+  certificates: "media/kasumi-yoshizawa.mp4",
+  contact: "media/yandere-chan-joker-moewalls-com.mp4",
 };
+
+const customStyle = document.createElement("style");
+customStyle.textContent = `
+  /* Pengaturan umum untuk semua ukuran layar */
+  video[src*="AnnTakamaki.mp4"] {
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: cover !important;
+  }
+
+  /* KHUSUS DESKTOP (Layar >= 769px) */
+  @media (min-width: 769px) {
+    video[src*="AnnTakamaki.mp4"] {
+      margin-right: 30px !important;
+      margin-left: -580px !important;
+      object-position: 80% center !important;
+    }
+  }
+
+  /* KHUSUS MOBILE (Layar <= 768px) */
+  @media (max-width: 768px) {
+    video[src*="AnnTakamaki.mp4"] {
+      margin: 0 !important; /* Wajib di-reset agar video kembali ke dalam layar HP */
+      object-position: 60% center !important; 
+    }
+  }
+`;
+document.head.appendChild(customStyle);
 
 const PAGE_MEDIA = new Proxy(DESKTOP_MEDIA, {
   get(target, prop) {
