@@ -12,10 +12,10 @@ const View = {
     menuItems: [],
     bootOverlay: document.getElementById("boot-overlay"),
     wipe: document.getElementById("wipe"),
+    cut: document.getElementById("cut"),
     featGrid: document.getElementById("feat-grid"),
     repoGrid: document.getElementById("repo-grid"),
     repoStatus: document.getElementById("repo-status"),
-    skillsBody: document.getElementById("skills-body"),
     bgm: document.getElementById("bgm-player"),
     cursor: document.getElementById("cursor"),
     clock: document.getElementById("hud-clock"),
@@ -33,9 +33,10 @@ const View = {
     document.querySelectorAll(".screen").forEach(s => {
       this.els.screens[s.id.replace("screen-", "")] = s;
     });
-    this.els.menuItems = [...document.querySelectorAll(".menu-item")];
+    this.els.menuItems = [...document.querySelectorAll("#menu .menu-item")];
     document.querySelectorAll("[data-ransom]").forEach(el => this.ransomize(el));
     Menu.build(this.els.menuItems);
+    Cutouts.init();
     this.startClock();
     this.startCursor();
     FX.init();
@@ -88,7 +89,7 @@ const View = {
   },
 
   /* ========== Screens & menu ========== */
-  showScreen(name) {
+  showScreen(name, mediaOptions) {
     const s = this.els.screens;
     Object.values(s).forEach(sc => sc.classList.remove("active"));
     if (s[name]) {
@@ -96,7 +97,7 @@ const View = {
       s[name].scrollTop = 0;
     }
     document.body.dataset.screen = name;
-    Media.show(name);
+    return Media.show(name, mediaOptions);   // resolves when the visual is ready
   },
 
   setMenuSelection(index) {
@@ -121,12 +122,68 @@ const View = {
 
   /* ========== Wipe transition ========== */
   wipe(swap, done) {
+    this.resetCurtain();
     if (this.reducedMotion) { swap(); done(); return; }
     const w = this.els.wipe;
     w.classList.remove("go"); void w.offsetWidth;
     w.classList.add("go");
     setTimeout(swap, 340);
     setTimeout(done, 700);
+  },
+
+  /* ========== Return-Home slash cut ==========
+     Close, swap behind it, hold until Home's media is ready, then open.
+     swap() must return a promise; done() runs as the curtain starts to open.
+     Timings match css/transition.css. */
+  CLOSE_MS: 300,       // both halves have landed
+  MIN_HOLD_MS: 190,    // the HOME stamp lands; Home paints underneath
+  MAX_HOLD_MS: 1200,   // never keep a slow connection waiting longer than this
+  OPEN_MS: 400,
+  curtainTimers: [],
+  curtainRun: 0,
+
+  curtain(swap, done) {
+    this.resetCurtain();
+    if (this.reducedMotion) { swap(); done(); return; }
+
+    const run = this.curtainRun;
+    const w = this.els.cut;
+    const body = document.body;
+    const later = (fn, ms) => this.curtainTimers.push(setTimeout(fn, ms));
+    const wait = ms => new Promise(resolve => later(resolve, ms));
+
+    this.els.wipe.classList.remove("go");
+    void w.offsetWidth;
+    w.classList.add("is-closing");
+
+    later(() => {                       // fully covered: safe to change the page
+      body.classList.add("curtain-held");
+      const ready = Promise.resolve(swap());
+      const open = () => {
+        if (run !== this.curtainRun) return;
+        Media.dropStale();
+        // two frames, so the new picture has really been painted
+        requestAnimationFrame(() => requestAnimationFrame(() => {
+          if (run !== this.curtainRun) return;
+          body.classList.remove("curtain-held");
+          w.classList.replace("is-closing", "is-opening");
+          done();
+          later(() => w.classList.remove("is-opening"), this.OPEN_MS);
+        }));
+      };
+      Promise.race([
+        Promise.all([ready, wait(this.MIN_HOLD_MS)]),
+        wait(this.MAX_HOLD_MS),
+      ]).then(open, open);
+    }, this.CLOSE_MS);
+  },
+
+  resetCurtain() {
+    this.curtainRun++;
+    this.curtainTimers.forEach(clearTimeout);
+    this.curtainTimers = [];
+    this.els.cut.classList.remove("is-closing", "is-opening");
+    document.body.classList.remove("curtain-held");
   },
 
   /* ========== Music UI (playback itself lives in audio.js) ========== */
@@ -237,36 +294,6 @@ const View = {
         </div>`;
       this.els.repoGrid.appendChild(a);
     });
-  },
-
-  /* ========== Skills ========== */
-  renderSkills(groups) {
-    groups.forEach(g => {
-      const div = document.createElement("div");
-      div.className = "skill-group";
-      div.innerHTML = `<h3>${g.group}</h3>`;
-      g.items.forEach(([name, value]) => {
-        const row = document.createElement("div");
-        row.className = "skill-row";
-        row.innerHTML = `
-          <span class="name">${name}</span>
-          <div class="skill-bar"><div class="fill" data-v="${value}"></div></div>
-          <span class="lv">${value}</span>`;
-        div.appendChild(row);
-      });
-      this.els.skillsBody.appendChild(div);
-    });
-  },
-
-  animateSkillBars() {
-    const fills = this.els.skillsBody.querySelectorAll(".fill");
-    fills.forEach(f => { f.style.transform = "scaleX(0)"; });
-    requestAnimationFrame(() => requestAnimationFrame(() => {
-      fills.forEach((f, i) => {
-        f.style.transitionDelay = i * 40 + "ms";
-        f.style.transform = `scaleX(${f.dataset.v / 100})`;
-      });
-    }));
   },
 
   /* ========== Ambient: clock and cursor ========== */

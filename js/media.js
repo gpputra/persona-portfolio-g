@@ -12,6 +12,8 @@ const Media = {
   current: null,       // { el, url, type }
   pending: null,
   token: 0,
+  instant: false,      // true while the Home curtain is closed: swap with no fades
+  settle: null,        // resolves the promise returned by show()
   dead: new Set(),     // URLs that failed, so they are not requested again
 
   init() {
@@ -48,15 +50,34 @@ const Media = {
     return [...new Set(urls)].filter(url => !this.dead.has(url));
   },
 
-  show(page) {
+  /* Returns a promise that resolves once the page's visual is on screen
+     (or there is none). { instant: true } is for swaps behind a closed curtain. */
+  show(page, { instant = false } = {}) {
+    this.done();                             // release any earlier waiter
+    this.instant = instant;
+    const settled = new Promise(resolve => { this.settle = resolve; });
     const token = ++this.token;
     this.discard(this.pending);
     this.pending = null;
     clearTimeout(this.staleTimer);
     this.stage.dataset.page = page;
     // If the new file is slow, don't leave another page's visual on screen
-    this.staleTimer = setTimeout(() => this.clear(), 900);
+    // (not needed behind the curtain: dropStale() covers that case)
+    if (!instant) this.staleTimer = setTimeout(() => this.clear(), 900);
     this.tryNext(this.queueFor(page), page, token);
+    return settled;
+  },
+
+  done() {
+    if (this.settle) this.settle();
+    this.settle = null;
+  },
+
+  // The curtain is about to open but the new file is still loading: remove the
+  // previous page's visual now, so the dark fallback shows until it arrives
+  dropStale() {
+    if (this.pending) this.clear();
+    this.instant = false;                    // a late arrival fades in normally
   },
 
   tryNext(queue, page, token) {
@@ -67,6 +88,7 @@ const Media = {
     if (this.current && this.current.url === url) {      // same file: keep it running
       clearTimeout(this.staleTimer);
       this.frame(this.current.el, page);
+      this.done();
       return;
     }
 
@@ -128,24 +150,35 @@ const Media = {
   play(item) {
     if (!item || item.type !== "video" || this.reducedMotion || document.hidden) return;
     const p = item.el.play();
-    if (p && p.catch) p.catch(() => {});
+    if (p && p.catch) p.catch(() => { });
   },
 
   reveal(item) {
     const old = this.current;
     this.current = item;
+    if (this.instant) item.el.style.transition = "none";
     void item.el.offsetWidth;                // commit the start state first
     item.el.classList.add("is-in");
-    this.retire(old);
+    if (this.instant) {                      // commit, then restore normal fades
+      void getComputedStyle(item.el).opacity;
+      item.el.style.transition = "";
+    }
+    if (this.instant) this.discard(old);     // hidden, so unmount right away
+    else this.retire(old);
     this.report(item.type);
+    this.done();
   },
 
   clear() {
     const old = this.current;
     this.current = null;
-    if (old) old.el.classList.remove("is-in");
-    this.retire(old);
+    if (old && this.instant) this.discard(old);
+    else {
+      if (old) old.el.classList.remove("is-in");
+      this.retire(old);
+    }
     this.report("");
+    if (!this.pending) this.done();
   },
 
   retire(item) {

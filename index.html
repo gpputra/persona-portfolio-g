@@ -13,6 +13,8 @@
     rel="stylesheet">
   <link rel="stylesheet" href="css/style.css">
   <link rel="stylesheet" href="css/menu.css">
+  <link rel="stylesheet" href="css/locked.css">
+  <link rel="stylesheet" href="css/transition.css">
 </head>
 
 
@@ -61,6 +63,18 @@
     <div class="pane p1"></div>
   </div>
 
+  <!-- Return-Home slash cut (BACK / ESC) -->
+  <div id="cut" aria-hidden="true">
+    <div class="cut-half cut-a"></div>
+    <div class="cut-half cut-b"></div>
+    <div class="cut-streak cut-streak-1"></div>
+    <div class="cut-streak cut-streak-2"></div>
+    <div class="cut-emblem">
+      <div class="cut-star" data-star></div>
+      <div class="cut-word" data-cut="HOME" data-k="0" data-w="2"></div>
+    </div>
+  </div>
+
   <!-- Custom animated cursor -->
   <div id="cursor" aria-hidden="true"></div>
 
@@ -106,7 +120,7 @@
               <span class="menu-label">PROJECTS</span>
             </button>
             <button type="button" class="menu-item" data-target="skills"
-              data-subtitle="Technical proficiencies and spoken languages" style="--i:1">
+              data-subtitle="Access denied — cognitive data locked" style="--i:1">
               <span class="menu-label">SKILLS</span>
             </button>
             <button type="button" class="menu-item" data-target="about" data-subtitle="Who I am and where I come from"
@@ -137,10 +151,50 @@
       </section>
 
       <!-- SKILLS -->
-      <section class="screen sub" id="screen-skills" aria-label="Skills">
-        <div class="screen-head"><span class="ransom" data-ransom="SKILLS"></span></div>
+      <section class="screen sub locked" id="screen-skills" aria-label="Skills: locked">
+        <div class="lk-bg" aria-hidden="true">
+          <div class="lk-rays"></div>
+          <div class="lk-bigstar" data-star></div>
+          <div class="lk-403">403</div>
+          <div class="lk-tape lk-tape-a">
+            <div><span>ACCESS DENIED ★ COGNITIVE DATA LOCKED ★ ACCESS DENIED ★ COGNITIVE DATA LOCKED ★ ACCESS DENIED ★
+                COGNITIVE DATA LOCKED ★ ACCESS DENIED ★ COGNITIVE DATA LOCKED ★ </span><span>ACCESS DENIED ★ COGNITIVE
+                DATA LOCKED ★ ACCESS DENIED ★ COGNITIVE DATA LOCKED ★ ACCESS DENIED ★ COGNITIVE DATA LOCKED ★ ACCESS
+                DENIED ★ COGNITIVE DATA LOCKED ★ </span></div>
+          </div>
+          <div class="lk-tape lk-tape-b">
+            <div><span>ACCESS DENIED ★ COGNITIVE DATA LOCKED ★ ACCESS DENIED ★ COGNITIVE DATA LOCKED ★ ACCESS DENIED ★
+                COGNITIVE DATA LOCKED ★ ACCESS DENIED ★ COGNITIVE DATA LOCKED ★ </span><span>ACCESS DENIED ★ COGNITIVE
+                DATA LOCKED ★ ACCESS DENIED ★ COGNITIVE DATA LOCKED ★ ACCESS DENIED ★ COGNITIVE DATA LOCKED ★ ACCESS
+                DENIED ★ COGNITIVE DATA LOCKED ★ </span></div>
+          </div>
+          <div class="lk-edge lk-edge-a"></div>
+          <div class="lk-edge lk-edge-b"></div>
+          <div class="lk-scanlines"></div>
+        </div>
         <button type="button" class="back-hint" data-back>ESC · Back</button>
-        <div id="skills-body"></div>
+        <div class="lk-core">
+          <div class="lk-shake">
+            <div class="lk-card">
+              <div class="lk-paper" aria-hidden="true"><i></i><i></i><i></i></div>
+              <p class="lk-code"><span class="lk-glitch" data-text="SYSTEM ERROR // 403">SYSTEM ERROR // 403</span></p>
+              <h2 class="lk-headline" aria-label="Hire me to unlock this skill">
+                <span class="lk-line lk-line-1" aria-hidden="true" data-cut="HIRE ME" data-k="0" data-r="5">HIRE
+                  ME</span>
+                <span class="lk-line lk-line-2" aria-hidden="true" data-cut="TO UNLOCK" data-w="0,5">TO UNLOCK</span>
+                <span class="lk-line lk-line-3" aria-hidden="true" data-cut="THIS SKILL" data-r="2" data-k="5">THIS
+                  SKILL</span>
+              </h2>
+              <p class="lk-denied">Access denied: cognitive data locked</p>
+              <p class="lk-sub">Restricted archive — contact Phantom Thief to decrypt skillset</p>
+              <div class="lk-stamp" aria-hidden="true"><span>Locked</span></div>
+            </div>
+          </div>
+          <div class="lk-action">
+            <button type="button" class="menu-item sel lk-cta" data-goto="contact"><span class="menu-label">CONTACT
+                ME</span></button>
+          </div>
+        </div>
       </section>
 
       <!-- ABOUT -->
@@ -296,6 +350,7 @@
   <script src="js/fx.js" defer></script>
   <script src="js/media.js" defer></script>
   <script src="js/menu.js" defer></script>
+  <script src="js/cutouts.js" defer></script>
   <script src="js/view.js" defer></script>
   <script src="js/controller.js" defer></script>
 </body>

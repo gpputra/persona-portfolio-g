@@ -38,11 +38,15 @@ body {
   overscroll-behavior: none;
 }
 
+html {
+  background: #0a0a0a;
+}
+
 body {
   position: fixed;
   /* stops iOS rubber-banding the whole page */
   inset: 0;
-  background: var(--black);
+  background: #0a0a0a;
   color: var(--white);
   font-family: var(--hud-font);
   -webkit-font-smoothing: antialiased;
@@ -170,12 +174,11 @@ button {
   z-index: 0;
   overflow: hidden;
   pointer-events: none;
-  /* visible while the video loads, or if there is no video at all */
+  /* visible while the video loads, or if there is no video at all:
+     always dark, so a slow swap can never flash */
   background:
-    linear-gradient(115deg, transparent 0 36%, rgba(11, 11, 11, .78) 36.2% 52%, transparent 52.2% 55%,
-      rgba(255, 255, 255, .9) 55.2% 56%, transparent 56.2%),
-    linear-gradient(160deg, var(--red) 20%, rgba(217, 4, 41, .45) 100%),
-    var(--black);
+    linear-gradient(115deg, transparent 0 36%, rgba(217, 4, 41, .16) 36.2% 52%, transparent 52.2%),
+    #0a0a0a;
 }
 
 #media,
@@ -1389,6 +1392,85 @@ body:not([data-screen="home"]):not([data-screen="boot"]) #panel {
   100% {
     transform: translate3d(130%, 0, 0) skewX(-14deg);
   }
+}
+
+/* ---------- Return-Home curtain (BACK / ESC): red + black only ----------
+   Closes, stays closed while the page and video swap, then opens.
+   The closed state is crimson with black slashes. Timings: View.curtain() */
+#wipe.home-close,
+#wipe.home-open {
+  visibility: visible;
+}
+
+#wipe.home-close .p3,
+#wipe.home-open .p3 {
+  display: none;
+}
+
+#wipe.home-close .p1,
+#wipe.home-open .p1 {
+  background:
+    linear-gradient(104deg, transparent 0 34%, var(--black) 34.1% 41%, transparent 41.1% 42.2%,
+      var(--black) 42.2% 43%, transparent 43.1% 59%, var(--black) 59.1% 60%, transparent 60.1% 61.5%,
+      var(--black) 61.5% 70%, transparent 70.1%),
+    var(--red);
+}
+
+/* the black pane leads and trails, so it gets slashes too: never a blank frame */
+#wipe.home-close .p2,
+#wipe.home-open .p2 {
+  background:
+    linear-gradient(104deg, transparent 0 32%, var(--red) 32.1% 35%, transparent 35.1% 45%,
+      var(--red) 45.1% 46%, transparent 46.1% 54%, var(--red) 54.1% 58%, transparent 58.1% 66%,
+      var(--red) 66.1% 67.5%, transparent 67.6%),
+    var(--black);
+}
+
+#wipe.home-close .pane {
+  animation: curtainClose .3s cubic-bezier(.6, 0, .25, 1) both;
+}
+
+#wipe.home-close .p1 {
+  animation-delay: .035s;
+}
+
+#wipe.home-open .pane {
+  animation: curtainOpen .32s cubic-bezier(.7, 0, .3, 1) both;
+}
+
+#wipe.home-open .p2 {
+  animation-delay: .035s;
+}
+
+@keyframes curtainClose {
+  from {
+    transform: translate3d(-130%, 0, 0) skewX(-14deg);
+  }
+
+  to {
+    transform: translate3d(0, 0, 0) skewX(-14deg);
+  }
+}
+
+@keyframes curtainOpen {
+  from {
+    transform: translate3d(0, 0, 0) skewX(-14deg);
+  }
+
+  to {
+    transform: translate3d(130%, 0, 0) skewX(-14deg);
+  }
+}
+
+/* behind the closed curtain: the side panel snaps shut, and Home's entrance
+   waits so that it plays as the curtain opens */
+body.curtain-held #panel {
+  transition: none;
+}
+
+body.curtain-held #screen-home .mi-body,
+body.curtain-held #screen-home #hero-identity>* {
+  animation-play-state: paused !important;
 }
 
 #cursor {

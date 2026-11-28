@@ -66,24 +66,28 @@ const Controller = {
       clearTimeout(this.lockTimer);
       this.transitioning = false;
     };
-    this.lockTimer = setTimeout(unlock, 800);
+    // Going Home uses the hold-closed curtain; every other move uses the wipe
+    const goingHome = screen === "home";
+    this.lockTimer = setTimeout(unlock, goingHome ? 2400 : 800);
 
-    View.wipe(
-      () => {                       // mid-wipe: swap screens while covered
+    const transition = goingHome ? "curtain" : "wipe";
+    View[transition](
+      () => {                       // swap screens while covered
+        let ready;
         try {
           Model.state.screen = screen;
-          View.showScreen(screen);
+          ready = View.showScreen(screen, { instant: goingHome });
           const item = View.els.menuItems.find(m => m.dataset.target === screen)
             || View.els.menuItems[Model.state.menuIndex];
           View.updateSubtitle(item.dataset.subtitle);
           if (screen === "projects") this.loadProjects();
-          if (screen === "skills") this.loadSkills();
         } finally {                 // runs even if a page fails to render
           if (onSwap) onSwap();
-          unlock();
+          if (!goingHome) unlock();
         }
+        return ready;
       },
-      () => { }
+      () => { if (goingHome) unlock(); }   // curtain opening: Home takes taps
     );
     return true;
   },
@@ -101,6 +105,23 @@ const Controller = {
       const target = item.dataset.page || item.dataset.target;
       if (!this.goTo(target, () => Menu.reset())) Menu.reset();
     });
+  },
+
+  // In-page shortcut: the same strobe-and-launch as a Home menu item
+  confirmShortcut(button) {
+    if (this.confirming || this.transitioning) return;
+    const from = document.body.dataset.screen;
+    const reset = () => button.classList.remove("confirm");
+    const go = () => {
+      this.confirming = false;
+      // BACK may have been tapped during the flash: don't override it
+      if (this.transitioning || document.body.dataset.screen !== from
+        || !this.goTo(button.dataset.goto, reset)) reset();
+    };
+    if (Menu.reducedMotion) return go();
+    this.confirming = true;
+    button.classList.add("confirm");
+    setTimeout(go, Menu.CONFIRM_MS);
   },
 
   select(index) {
@@ -126,14 +147,6 @@ const Controller = {
     this.loadingRepos = false;
   },
 
-  loadSkills() {
-    if (!Model.state.skillsBuilt) {
-      View.renderSkills(Model.skills);
-      Model.state.skillsBuilt = true;
-    }
-    View.animateSkillBars();
-  },
-
   /* ---------- Input bindings ---------- */
   bindMenu() {
     View.els.menuItems.forEach((item, i) => {
@@ -152,6 +165,10 @@ const Controller = {
 
     document.querySelectorAll("[data-back]").forEach(b =>
       b.addEventListener("click", () => this.goTo("home")));
+
+    // In-page shortcuts, such as "unlock" on the locked Skills screen
+    document.querySelectorAll("[data-goto]").forEach(b =>
+      b.addEventListener("click", () => this.confirmShortcut(b)));
 
     // Clicking the name always takes you home
     document.getElementById("big-name").addEventListener("click", () => {

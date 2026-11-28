@@ -1,0 +1,240 @@
+/* =====================================================================
+   TRANSITION.CSS — the return-Home "slash cut" (BACK / ESC).
+   Two jagged halves slam shut along a diagonal, the star stamps HOME,
+   then the cut splits apart. It runs right-to-left, the reverse of the
+   entrance wipe. Sequenced by View.curtain(); transform + opacity only.
+
+   While closed, the halves overlap, so the page and video swap is never
+   visible. White appears only as thin edges, never as a full frame.
+   ===================================================================== */
+
+#cut {
+  position: fixed;
+  inset: -8%;
+  /* spare room, so the slam and shake never expose an edge */
+  z-index: 300;
+  overflow: hidden;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+#cut * {
+  pointer-events: none;
+}
+
+#cut.is-closing,
+#cut.is-opening {
+  visibility: visible;
+}
+
+/* ---------- the two halves ---------- */
+.cut-half {
+  position: absolute;
+  inset: 0;
+}
+
+.cut-half::before,
+.cut-half::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+}
+
+/* upper half: crimson with halftone and black speed slashes.
+   Its jagged lower edge sits 2% below the other half's edge. */
+.cut-a {
+  clip-path: polygon(0 0, 100% 0, 100% 36%, 77% 39%, 74% 49%, 52% 47%, 48% 56%, 26% 58%, 22% 68%, 0 70%);
+}
+
+.cut-a::before {
+  background:
+    radial-gradient(circle, rgba(11, 11, 11, .34) 2.2px, transparent 2.5px) 0 0 / 15px 15px,
+    linear-gradient(112deg, transparent 0 30%, var(--black) 30.1% 34%, transparent 34.1% 35.4%,
+      var(--black) 35.4% 36%, transparent 36.1% 66%, var(--black) 66.1% 66.7%, transparent 66.8% 68%,
+      var(--black) 68.1% 74%, transparent 74.1%),
+    var(--red);
+}
+
+.cut-a::after {
+  display: none;
+}
+
+/* lower half: white rim along the cut, black face, crimson slashes */
+.cut-b {
+  clip-path: polygon(0 68%, 22% 66%, 26% 56%, 48% 54%, 52% 45%, 74% 47%, 77% 37%, 100% 34%, 100% 100%, 0 100%);
+}
+
+.cut-b::before {
+  background: var(--white);
+}
+
+.cut-b::after {
+  background:
+    linear-gradient(112deg, transparent 0 24%, var(--red) 24.1% 29%, transparent 29.1% 30.4%,
+      var(--red) 30.4% 31%, transparent 31.1% 61%, var(--red) 61.1% 72%, transparent 72.1% 73.4%,
+      var(--red) 73.5% 74.4%, transparent 74.5%),
+    radial-gradient(circle, rgba(217, 4, 41, .34) 1.8px, transparent 2.1px) 0 0 / 15px 15px,
+    var(--black);
+  clip-path: polygon(0 68.7%, 22% 66.7%, 26% 56.7%, 48% 54.7%, 52% 45.7%, 74% 47.7%, 77% 37.7%, 100% 34.7%, 100% 100%, 0 100%);
+}
+
+#cut.is-closing .cut-a {
+  animation: cutInA .22s cubic-bezier(.3, .1, .2, 1) both;
+}
+
+#cut.is-closing .cut-b {
+  animation: cutInB .22s cubic-bezier(.3, .1, .2, 1) .04s both;
+}
+
+@keyframes cutInA {
+  from {
+    transform: translate3d(24%, -74%, 0);
+  }
+}
+
+@keyframes cutInB {
+  from {
+    transform: translate3d(-24%, 74%, 0);
+  }
+}
+
+#cut.is-opening .cut-a {
+  animation: cutOutA .34s cubic-bezier(.72, 0, .24, 1) .05s both;
+}
+
+#cut.is-opening .cut-b {
+  animation: cutOutB .34s cubic-bezier(.72, 0, .24, 1) .05s both;
+}
+
+@keyframes cutOutA {
+  to {
+    transform: translate3d(-30%, -108%, 0);
+  }
+}
+
+@keyframes cutOutB {
+  to {
+    transform: translate3d(30%, 108%, 0);
+  }
+}
+
+/* ---------- blade streaks along the seam ---------- */
+.cut-streak {
+  position: absolute;
+  left: -30%;
+  top: 50%;
+  width: 160%;
+  height: 7vmin;
+  margin-top: -3.5vmin;
+  opacity: 0;
+  background: var(--red);
+  border-block: 3px solid var(--white);
+  clip-path: polygon(0 50%, 38% 12%, 100% 38%, 100% 62%, 38% 88%);
+  rotate: -17deg;
+}
+
+.cut-streak-2 {
+  height: 2vmin;
+  margin-top: 7vmin;
+  background: var(--white);
+  border: 0;
+}
+
+#cut.is-closing .cut-streak {
+  animation: cutStreak .3s cubic-bezier(.3, .7, .4, 1) .08s both;
+}
+
+#cut.is-closing .cut-streak-2 {
+  animation-delay: .14s;
+}
+
+#cut.is-opening .cut-streak-1 {
+  animation: cutStreak .32s cubic-bezier(.3, .7, .4, 1) both;
+}
+
+@keyframes cutStreak {
+  0% {
+    opacity: 1;
+    transform: translate3d(105%, 0, 0) scaleY(1.4);
+  }
+
+  70% {
+    opacity: 1;
+  }
+
+  100% {
+    opacity: 0;
+    transform: translate3d(-105%, 0, 0) scaleY(.4);
+  }
+}
+
+/* ---------- star stamp + HOME ---------- */
+.cut-emblem {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 0;
+  height: 0;
+  opacity: 0;
+}
+
+#cut.is-closing .cut-emblem {
+  opacity: 1;
+}
+
+.cut-star {
+  position: absolute;
+  width: 54vmin;
+  height: 54vmin;
+  margin: -27vmin 0 0 -27vmin;
+}
+
+.cut-star svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+#cut.is-closing .cut-star {
+  animation: cutStar .34s var(--p5-spring) .17s both;
+}
+
+@keyframes cutStar {
+  from {
+    opacity: 0;
+    transform: scale(.1) rotate(-220deg);
+  }
+}
+
+.cut-word {
+  position: absolute;
+  display: flex;
+  justify-content: center;
+  width: 90vmin;
+  margin: -.62em 0 0 -45vmin;
+  font-size: 17vmin;
+  line-height: 1;
+  text-transform: uppercase;
+  rotate: -8deg;
+}
+
+#cut.is-closing .cut-word .cl-g {
+  animation: lkLetter .24s var(--p5-spring) calc(.22s + var(--k) * 32ms) both;
+}
+
+/* the stamp punches toward the viewer as the cut splits */
+#cut.is-opening .cut-emblem {
+  animation: cutEmblemOut .16s cubic-bezier(.5, 0, 1, .6) both;
+}
+
+@keyframes cutEmblemOut {
+  from {
+    opacity: 1;
+  }
+
+  to {
+    opacity: 0;
+    transform: scale(1.9) rotate(14deg);
+  }
+}
