@@ -200,14 +200,23 @@ button {
   /* also keeps browser video overlays away */
   user-select: none;
   -webkit-user-drag: none;
+  /* opacity + translate stay on the compositor, so a playing video is never
+     repainted. "translate" is separate from "transform": the mobile scale
+     and any focal-point rules still apply on top of it. */
   opacity: 0;
-  clip-path: polygon(100% 0, 100% 0, 100% 100%, 100% 100%);
-  transition: opacity .35s ease, clip-path .5s var(--slash);
+  translate: 4% 0;
+  transition: opacity .2s ease-out, translate .34s cubic-bezier(.16, 1, .3, 1);
 }
 
 .media-layer.is-in {
   opacity: 1;
-  clip-path: polygon(0 0, 100% 0, 100% 100%, -30% 100%);
+  translate: 0 0;
+}
+
+/* keeps the cached layers' stacking order underneath the scrim */
+#media {
+  isolation: isolate;
+  z-index: 0;
 }
 
 .media-layer::-webkit-media-controls,
@@ -586,8 +595,11 @@ body.app-ready #shell {
   z-index: 1;
   pointer-events: none;
   background: var(--red);
-  clip-path: polygon(0 0, 0 0, 0 100%, 0 100%);
-  transition: clip-path .45s var(--slash);
+  /* the shape never changes: the whole slash slides in */
+  clip-path: polygon(0 0, 62% 0, 52% 100%, 0 100%);
+  transform: translate3d(-64%, 0, 0);
+  visibility: hidden;
+  transition: transform .34s cubic-bezier(.16, 1, .3, 1), visibility 0s .34s;
 }
 
 #panel::after {
@@ -602,7 +614,9 @@ body.app-ready #shell {
 }
 
 body:not([data-screen="home"]):not([data-screen="boot"]) #panel {
-  clip-path: polygon(0 0, 62% 0, 52% 100%, 0 100%);
+  transform: translate3d(0, 0, 0);
+  visibility: visible;
+  transition-delay: 0s;
 }
 
 /* 52vw is the panel's narrowest point, so content always stays inside it */
@@ -619,14 +633,37 @@ body:not([data-screen="home"]):not([data-screen="boot"]) #panel {
   scrollbar-color: var(--red) transparent;
 }
 
-.sub.active {
-  animation: pageIn .4s var(--snap);
+/* Page content snaps in block by block as the wipe leaves. It animates
+   "translate" and opacity only, so each block keeps its own tilt. The delays
+   start at the swap, which happens while the wipe still covers the screen. */
+.sub.active:not(.locked)>*:not(.back-hint) {
+  animation: blockIn .3s cubic-bezier(.16, 1, .3, 1) calc(.1s + var(--b, 6) * 40ms) backwards;
 }
 
-@keyframes pageIn {
+.sub>*:nth-child(1) {
+  --b: 0;
+}
+
+.sub>*:nth-child(3) {
+  --b: 1;
+}
+
+.sub>*:nth-child(4) {
+  --b: 2;
+}
+
+.sub>*:nth-child(5) {
+  --b: 3;
+}
+
+.sub>*:nth-child(6) {
+  --b: 4;
+}
+
+@keyframes blockIn {
   from {
     opacity: 0;
-    transform: translateX(-36px);
+    translate: -44px 0;
   }
 }
 
@@ -1394,76 +1431,8 @@ body:not([data-screen="home"]):not([data-screen="boot"]) #panel {
   }
 }
 
-/* ---------- Return-Home curtain (BACK / ESC): red + black only ----------
-   Closes, stays closed while the page and video swap, then opens.
-   The closed state is crimson with black slashes. Timings: View.curtain() */
-#wipe.home-close,
-#wipe.home-open {
-  visibility: visible;
-}
-
-#wipe.home-close .p3,
-#wipe.home-open .p3 {
-  display: none;
-}
-
-#wipe.home-close .p1,
-#wipe.home-open .p1 {
-  background:
-    linear-gradient(104deg, transparent 0 34%, var(--black) 34.1% 41%, transparent 41.1% 42.2%,
-      var(--black) 42.2% 43%, transparent 43.1% 59%, var(--black) 59.1% 60%, transparent 60.1% 61.5%,
-      var(--black) 61.5% 70%, transparent 70.1%),
-    var(--red);
-}
-
-/* the black pane leads and trails, so it gets slashes too: never a blank frame */
-#wipe.home-close .p2,
-#wipe.home-open .p2 {
-  background:
-    linear-gradient(104deg, transparent 0 32%, var(--red) 32.1% 35%, transparent 35.1% 45%,
-      var(--red) 45.1% 46%, transparent 46.1% 54%, var(--red) 54.1% 58%, transparent 58.1% 66%,
-      var(--red) 66.1% 67.5%, transparent 67.6%),
-    var(--black);
-}
-
-#wipe.home-close .pane {
-  animation: curtainClose .3s cubic-bezier(.6, 0, .25, 1) both;
-}
-
-#wipe.home-close .p1 {
-  animation-delay: .035s;
-}
-
-#wipe.home-open .pane {
-  animation: curtainOpen .32s cubic-bezier(.7, 0, .3, 1) both;
-}
-
-#wipe.home-open .p2 {
-  animation-delay: .035s;
-}
-
-@keyframes curtainClose {
-  from {
-    transform: translate3d(-130%, 0, 0) skewX(-14deg);
-  }
-
-  to {
-    transform: translate3d(0, 0, 0) skewX(-14deg);
-  }
-}
-
-@keyframes curtainOpen {
-  from {
-    transform: translate3d(0, 0, 0) skewX(-14deg);
-  }
-
-  to {
-    transform: translate3d(130%, 0, 0) skewX(-14deg);
-  }
-}
-
-/* behind the closed curtain: the side panel snaps shut, and Home's entrance
-   waits so that it plays as the curtain opens */
+/* behind the closed cut: the side panel snaps shut, and Home's entrance
+   waits so that it plays as the cut opens */
 body.curtain-held #panel {
   transition: none;
 }

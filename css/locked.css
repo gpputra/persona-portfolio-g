@@ -476,17 +476,55 @@ body[data-screen="skills"] .media-layer.is-side {
 }
 
 .lk-action {
+  display: flex;
+  justify-content: center;
+  align-self: stretch;
   flex-shrink: 0;
   animation: lkSlide .45s var(--p5-spring) .9s backwards;
 }
 
-/* The button is a Home .menu-item (see menu.css); only size and place here */
+/* The button is a Home .menu-item (see menu.css); only size and place here.
+   Every width is intrinsic, so no browser can stretch the button and pull the
+   words apart. The side margins reserve room for the star and lightning tail,
+   which hang outside the button box. */
+.lk-cta.menu-item .mi-body {
+  display: inline-flex;
+  width: -webkit-max-content;
+  width: max-content;
+}
+
+.lk-cta .menu-label {
+  display: inline-flex;
+  flex-wrap: nowrap;
+  justify-content: center;
+  gap: 0;
+  width: -webkit-max-content;
+  width: max-content;
+  white-space: nowrap;
+}
+
+.lk-cta .mi-l {
+  flex: 0 0 auto;
+}
+
+.lk-cta .mi-l.mi-space {
+  width: .26em;
+  margin: 0;
+  overflow: hidden;
+}
+
 .lk-cta.menu-item,
 .lk-cta.menu-item.sel {
   --menu-size: clamp(1.55rem, min(6.6cqh, 8.4cqw), 3.1rem);
   --x: 0px;
   --i: 0;
-  margin: 0;
+  display: inline-flex;
+  flex: 0 0 auto;
+  justify-content: center;
+  width: -webkit-fit-content;
+  width: fit-content;
+  margin: 0 calc(var(--menu-size) * 1.5);
+  padding: .1em .28em;
   min-height: 46px;
   transform: rotate(-4deg) scale(1.04);
 }
@@ -669,17 +707,26 @@ body[data-screen="skills"] .media-layer.is-side {
   }
 }
 
+/* narrow screens: size by width too, leaving air on both sides of the tail */
+@media (max-width: 480px) {
+
+  .lk-cta.menu-item,
+  .lk-cta.menu-item.sel {
+    --menu-size: clamp(1.3rem, min(6cqh, 7.6cqw), 2.2rem);
+  }
+}
+
 /* very short portrait phones */
 @media (max-width: 768px) and (max-height: 600px) and (orientation: portrait) {
   .lk-core {
-    gap: 2.4cqh;
-    padding-top: 4cqh;
+    gap: 1.4cqh;
+    padding-top: 2.6cqh;
   }
 
   .lk-card {
     --lk-size: min(8.6cqh, 14cqw);
-    padding-block: 4cqh 2.4cqh;
-    gap: 1.6cqh;
+    padding-block: 3.4cqh 2cqh;
+    gap: 1.3cqh;
   }
 
   .lk-cta.menu-item,

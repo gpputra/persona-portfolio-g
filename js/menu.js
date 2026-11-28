@@ -45,7 +45,8 @@ const Menu = {
   },
 
   buildItem(item, row) {
-    const word = item.textContent.trim().toUpperCase();
+    // collapse line breaks and indentation, or each one becomes its own letter box
+    const word = item.textContent.replace(/\s+/g, " ").trim().toUpperCase();
     item.textContent = "";
     item.setAttribute("aria-label", word);   // screen readers hear the word, not letters
     item.style.setProperty("--i", row);

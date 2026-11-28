@@ -121,14 +121,23 @@ const View = {
   },
 
   /* ========== Wipe transition ========== */
+  wipeTimers: [],
+
   wipe(swap, done) {
     this.resetCurtain();
+    this.cancelWipe();
     if (this.reducedMotion) { swap(); done(); return; }
     const w = this.els.wipe;
     w.classList.remove("go"); void w.offsetWidth;
     w.classList.add("go");
-    setTimeout(swap, 340);
-    setTimeout(done, 700);
+    this.wipeTimers = [setTimeout(swap, 340), setTimeout(done, 700)];
+  },
+
+  // Drops the pending page change. The panes are left to finish sliding off,
+  // so nothing pops out of view mid-flight.
+  cancelWipe() {
+    this.wipeTimers.forEach(clearTimeout);
+    this.wipeTimers = [];
   },
 
   /* ========== Return-Home slash cut ==========
@@ -261,7 +270,7 @@ const View = {
       a.className = "card feat";
       a.href = f.url; a.target = "_blank"; a.rel = "noopener";
       a.style.setProperty("--tilt", ((this.hash(f.title) % 5) - 2) * 0.8 + "deg");
-      a.style.setProperty("--d", i * 70 + "ms");
+      a.style.setProperty("--d", 140 + Math.min(i, 6) * 35 + "ms");
       a.innerHTML = `
         ${this.cardThumb(f.img)}
         <span class="lang">${f.tag}</span>
@@ -280,7 +289,7 @@ const View = {
       a.className = "card";
       a.href = r.html_url; a.target = "_blank"; a.rel = "noopener";
       a.style.setProperty("--tilt", ((this.hash(r.name) % 5) - 2) * 0.8 + "deg");
-      a.style.setProperty("--d", i * 70 + "ms");
+      a.style.setProperty("--d", 140 + Math.min(i, 6) * 35 + "ms");
       const pretty = r.name.replace(/[-_]/g, " ").replace(/\b\w/g, c => c.toUpperCase());
       const img = model.projectImages[r.name] || `assets/projects/${r.name}.png`;
       a.innerHTML = `

@@ -43,7 +43,13 @@ const Cutouts = {
 
     // The unlock button IS a Home menu item: same letters, slash bar and star
     const cta = document.querySelector(".lk-cta");
-    if (cta) Menu.buildItem(cta, 0);
+    if (cta) {
+      Menu.buildItem(cta, 0);
+      // the word gap gets a fixed width, whatever the font does with a space
+      cta.querySelectorAll(".mi-l").forEach(letter => {
+        if (!letter.textContent.trim()) letter.classList.add("mi-space");
+      });
+    }
 
     // Poking the card just gets you denied again. Web Animations run on top
     // of the CSS ones, so the entrance still replays on the next visit.

@@ -8,6 +8,8 @@ const Controller = {
 
   transitioning: false,
   confirming: false,    // true during the 200ms menu flash
+  confirmRun: 0,        // changing it cancels a flash in progress
+  entering: null,       // page being wiped in that hasn't swapped yet
 
   init() {
     this.applyModelDefaults();
@@ -38,7 +40,7 @@ const Controller = {
       SFX.play("confirm");
       // called synchronously inside the gesture, as autoplay rules require
       if (AUDIO_CONFIG.autoStartMusic) BGM.setPlaying(true);
-      View.dismissBoot();
+      View.dismissBoot(() => Media.preloadAll());   // once Home has settled
     };
     View.els.bootOverlay.addEventListener("click", start);
     addEventListener("keydown", e => {
@@ -57,6 +59,7 @@ const Controller = {
   /* ---------- Navigation ---------- */
   goTo(screen, onSwap) {
     if (this.transitioning || screen === Model.state.screen) return false;
+    Media.interrupt(screen);        // drop downloads this destination doesn't need
     this.transitioning = true;
     if (Model.state.playlistOpen) View.togglePlaylist(false);
 
@@ -71,9 +74,11 @@ const Controller = {
     this.lockTimer = setTimeout(unlock, goingHome ? 2400 : 800);
 
     const transition = goingHome ? "curtain" : "wipe";
+    this.entering = goingHome ? null : screen;
     View[transition](
       () => {                       // swap screens while covered
         let ready;
+        this.entering = null;           // from here on, BACK means a real return
         try {
           Model.state.screen = screen;
           ready = View.showScreen(screen, { instant: goingHome });
@@ -92,6 +97,32 @@ const Controller = {
     return true;
   },
 
+  /* BACK / ESC while a page is still on its way in (menu flash, or wipe not
+     yet swapped): call it off. Nothing has changed on screen, so it is instant.
+     Returns true if there was something to cancel. */
+  abortEntry() {
+    if (!this.confirming && !this.entering) return false;
+    this.confirmRun++;
+    this.confirming = false;
+    if (this.entering) {
+      View.cancelWipe();
+      clearTimeout(this.lockTimer);
+      this.transitioning = false;
+      this.entering = null;
+    }
+    Media.interrupt(Model.state.screen === "boot" ? "home" : document.body.dataset.screen);
+    Menu.reset();
+    document.querySelectorAll("[data-goto].confirm").forEach(b => b.classList.remove("confirm"));
+    View.updateSubtitle(View.els.menuItems[Model.state.menuIndex].dataset.subtitle);
+    return true;
+  },
+
+  // BACK button, ESC and the name: cancel an entry, or else return Home
+  back() {
+    if (this.abortEntry() && document.body.dataset.screen === "home") return;
+    if (document.body.dataset.screen !== "home") this.goTo("home");
+  },
+
   // Menu click, tap or Enter: flash first, then change page
   confirmMenu(index) {
     const item = View.els.menuItems[index];
@@ -100,7 +131,10 @@ const Controller = {
     Model.state.screen = "home";
     this.select(index);
     this.confirming = true;
+    const run = ++this.confirmRun;
+    Media.prime(item.dataset.page || item.dataset.target);
     Menu.burst(index, () => {       // fired by setTimeout, never animationend
+      if (run !== this.confirmRun) return;        // cancelled
       this.confirming = false;
       const target = item.dataset.page || item.dataset.target;
       if (!this.goTo(target, () => Menu.reset())) Menu.reset();
@@ -112,7 +146,9 @@ const Controller = {
     if (this.confirming || this.transitioning) return;
     const from = document.body.dataset.screen;
     const reset = () => button.classList.remove("confirm");
+    const run = ++this.confirmRun;
     const go = () => {
+      if (run !== this.confirmRun) return;        // cancelled
       this.confirming = false;
       // BACK may have been tapped during the flash: don't override it
       if (this.transitioning || document.body.dataset.screen !== from
@@ -120,6 +156,7 @@ const Controller = {
     };
     if (Menu.reducedMotion) return go();
     this.confirming = true;
+    Media.prime(button.dataset.goto);
     button.classList.add("confirm");
     setTimeout(go, Menu.CONFIRM_MS);
   },
@@ -152,7 +189,9 @@ const Controller = {
     View.els.menuItems.forEach((item, i) => {
       // Mouse only: touch taps must not leave a "hovered" state behind
       item.addEventListener("pointerenter", e => {
-        if (e.pointerType === "mouse") this.select(i);
+        if (e.pointerType !== "mouse") return;
+        this.select(i);
+        if (!this.transitioning) Media.prime(item.dataset.target);
       });
       item.addEventListener("focus", () => this.select(i));
     });
@@ -164,7 +203,7 @@ const Controller = {
     });
 
     document.querySelectorAll("[data-back]").forEach(b =>
-      b.addEventListener("click", () => this.goTo("home")));
+      b.addEventListener("click", () => this.back()));
 
     // In-page shortcuts, such as "unlock" on the locked Skills screen
     document.querySelectorAll("[data-goto]").forEach(b =>
@@ -172,22 +211,24 @@ const Controller = {
 
     // Clicking the name always takes you home
     document.getElementById("big-name").addEventListener("click", () => {
-      if (Model.state.screen !== "home") this.goTo("home");
+      this.back();
     });
   },
 
   bindKeyboard() {
     addEventListener("keydown", e => {
       if (this.booting()) return;
-      if (this.confirming) { e.preventDefault(); return; }
+      // ESC is never swallowed: it also cancels a page that is on its way in
+      if (this.confirming && e.key !== "Escape") { e.preventDefault(); return; }
 
       if (e.key === "Escape") {
         if (Model.state.playlistOpen) {
           SFX.play("back");
           this.setPlaylist(false);
-        } else if (Model.state.screen !== "home" && !this.transitioning) {
+        } else if (this.confirming || this.entering
+          || (Model.state.screen !== "home" && !this.transitioning)) {
           SFX.play("back");
-          this.goTo("home");
+          this.back();
         }
         return;
       }
